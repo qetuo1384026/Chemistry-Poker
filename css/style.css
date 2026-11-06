@@ -1,0 +1,157 @@
+:root {
+  --bg: #0f1722;
+  --panel: #1a2534;
+  --panel-2: #223046;
+  --text: #e8eef6;
+  --muted: #93a5bc;
+  --accent: #4fc3f7;
+  --accent-2: #ffd54f;
+  --ok: #66bb6a;
+  --bad: #ef5350;
+  --border: #32455e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+  background: linear-gradient(160deg, #0f1722 0%, #132030 100%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+.app-header { text-align: center; margin-bottom: 20px; }
+.app-header h1 { font-size: 2rem; letter-spacing: 4px; }
+.subtitle { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+
+.screen { display: flex; flex-direction: column; gap: 16px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 22px;
+}
+.panel h2 { font-size: 1.15rem; margin-bottom: 8px; color: var(--accent); }
+.panel h3 { font-size: 1rem; margin-bottom: 8px; color: var(--accent-2); }
+.hint { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+
+/* ---- 知识树 ---- */
+.module-block { margin-bottom: 14px; }
+.module-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; background: var(--panel-2); border-radius: 8px;
+  cursor: pointer; user-select: none;
+}
+.module-head:hover { background: #28395a; }
+.module-head .mod-title { font-weight: bold; }
+.module-head .mod-desc { color: var(--muted); font-size: 0.8rem; }
+.topic-list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px; padding: 8px 4px 4px 28px;
+}
+.topic-item {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; font-size: 0.9rem;
+}
+.topic-item:hover { background: var(--panel-2); }
+.topic-item input { flex-shrink: 0; transform: translateY(2px); }
+.topic-title { white-space: nowrap; }
+.topic-desc { color: var(--muted); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.deck-count {
+  margin-top: 10px; padding: 10px; text-align: center;
+  background: var(--panel-2); border-radius: 8px; color: var(--accent-2);
+  font-size: 0.95rem;
+}
+
+/* ---- 设置 ---- */
+.setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.setting-row label { width: 90px; color: var(--muted); }
+.setting-row select {
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+}
+.hint-inline { color: var(--muted); font-size: 0.8rem; }
+.error { color: var(--bad); min-height: 1.2em; font-size: 0.9rem; margin-bottom: 8px; }
+
+.btn {
+  border: none; border-radius: 8px; padding: 12px 32px;
+  font-size: 1.05rem; cursor: pointer; transition: transform .1s, box-shadow .1s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(79,195,247,.35); }
+.btn-primary { background: linear-gradient(135deg, #29b6f6, #0288d1); color: #fff; font-weight: bold; }
+
+/* ---- 对战区 ---- */
+.board-top { display: flex; align-items: center; justify-content: space-between; }
+.score-box {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 26px;
+}
+.score-box .label { font-size: 0.8rem; color: var(--muted); }
+.score-box .score { font-size: 1.8rem; font-weight: bold; color: var(--accent-2); }
+.round-info { color: var(--muted); font-size: 0.95rem; }
+
+.hand { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; min-height: 120px; }
+.ai-hand { opacity: 0.85; }
+
+.card {
+  width: 108px; min-height: 132px; border-radius: 10px;
+  background: #fdfdf8; color: #222;
+  border: 2px solid #888; box-shadow: 0 3px 8px rgba(0,0,0,.4);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 8px 6px; position: relative;
+  transition: transform .15s, box-shadow .15s;
+}
+.card.card-back {
+  background: repeating-linear-gradient(45deg, #2a4a7f, #2a4a7f 8px, #1e3a68 8px, #1e3a68 16px);
+  border-color: #16294a;
+}
+.card .ctype { font-size: 0.62rem; color: #fff; padding: 1px 7px; border-radius: 8px; align-self: stretch; text-align: center; }
+.card .cname { font-weight: bold; font-size: 0.92rem; text-align: center; margin: 6px 0 2px; word-break: break-all; }
+.card .csub { font-size: 0.68rem; color: #666; text-align: center; }
+.card .cmodule { font-size: 0.62rem; color: #999; }
+.card .cid { position: absolute; top: 3px; left: 6px; font-size: 0.6rem; color: #aaa; }
+
+.card-playable { border-color: var(--ok); box-shadow: 0 0 10px rgba(102,187,106,.5); cursor: pointer; }
+.card-playable:hover { transform: translateY(-10px) scale(1.06); }
+.card-clickable { cursor: pointer; }
+.card-clickable:hover { transform: translateY(-8px); }
+.card-dim { opacity: 0.45; }
+
+.trick-zone {
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  background: var(--panel); border: 1px dashed var(--border);
+  border-radius: 12px; padding: 16px; min-height: 180px;
+}
+.slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.slot-label { font-size: 0.8rem; color: var(--muted); }
+.slot:empty::before, .slot > div:empty {
+  content: ""; display: block; width: 108px; height: 132px;
+  border: 2px dashed var(--border); border-radius: 10px;
+}
+.vs { font-size: 1.4rem; font-weight: bold; color: var(--accent-2); }
+
+.turn-hint { text-align: center; color: var(--accent); min-height: 1.5em; font-size: 1rem; }
+.turn-hint.warn { color: var(--bad); }
+
+.log-panel { max-height: 220px; overflow-y: auto; }
+.log-entry { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.log-entry .lr-good { color: var(--ok); }
+.log-entry .lr-bad { color: var(--bad); }
+.log-entry .lr-expl { color: var(--muted); display: block; margin-top: 2px; }
+.log-empty { color: var(--muted); font-size: 0.85rem; padding: 6px; }
+
+/* ---- 结算 ---- */
+.end-panel { text-align: center; }
+.end-panel h2 { font-size: 1.8rem; margin-bottom: 10px; }
+.end-score { font-size: 1.2rem; color: var(--accent-2); margin-bottom: 16px; }
+.recap-list { text-align: left; max-width: 640px; margin: 0 auto 20px; }
+.recap-list li {
+  margin-bottom: 8px; padding: 8px 12px;
+  background: var(--panel-2); border-radius: 8px; font-size: 0.88rem;
+}
+.recap-list .rc-topic { color: var(--accent); margin-right: 6px; }

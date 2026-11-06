@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>化学扑克 · 人教版高中化学对战卡牌</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1>⚗ 化学扑克</h1>
+      <p class="subtitle">人教版高中化学 · 无机化学 × 有机化学 · 知识对战卡牌</p>
+    </header>
+
+    <!-- 知识范围选择界面 -->
+    <section id="screen-setup" class="screen">
+      <div class="panel">
+        <h2>① 选择知识范围</h2>
+        <p class="hint">勾选本局要考查的知识模块与专题，卡组将只由所选专题生成。</p>
+        <div id="topic-tree"></div>
+        <div id="deck-count" class="deck-count"></div>
+      </div>
+      <div class="panel">
+        <h2>② 对局设置</h2>
+        <div class="setting-row">
+          <label for="hand-size">手牌数量</label>
+          <select id="hand-size">
+            <option value="5">5 张（快速局）</option>
+            <option value="6" selected>6 张（标准局）</option>
+            <option value="8">8 张（进阶局）</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label for="difficulty">AI 难度</label>
+          <select id="difficulty">
+            <option value="easy">简单（随机应答）</option>
+            <option value="normal" selected>标准（择优应答）</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label for="show-hints">匹配提示</label>
+          <input type="checkbox" id="show-hints" checked>
+          <span class="hint-inline">高亮可正确应答的手牌（学习模式）</span>
+        </div>
+        <div id="setup-error" class="error"></div>
+        <button id="btn-start" class="btn btn-primary">开始对战</button>
+      </div>
+    </section>
+
+    <!-- 对战界面 -->
+    <section id="screen-board" class="screen" hidden>
+      <div class="board-top">
+        <div class="score-box ai">
+          <span class="label">AI 对手</span>
+          <span id="score-ai" class="score">0</span>
+        </div>
+        <div id="round-info" class="round-info"></div>
+        <div class="score-box player">
+          <span class="label">你</span>
+          <span id="score-player" class="score">0</span>
+        </div>
+      </div>
+
+      <div id="ai-hand" class="hand ai-hand"></div>
+
+      <div class="trick-zone">
+        <div class="slot">
+          <div class="slot-label">先出牌</div>
+          <div id="lead-card-slot"></div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="slot">
+          <div class="slot-label">应答牌</div>
+          <div id="resp-card-slot"></div>
+        </div>
+      </div>
+
+      <div id="turn-hint" class="turn-hint"></div>
+      <div id="player-hand" class="hand player-hand"></div>
+
+      <div class="panel log-panel">
+        <h3>对局记录（知识点解析）</h3>
+        <div id="game-log"></div>
+      </div>
+    </section>
+
+    <!-- 结算界面 -->
+    <section id="screen-end" class="screen" hidden>
+      <div class="panel end-panel">
+        <h2 id="end-title"></h2>
+        <p id="end-score" class="end-score"></p>
+        <h3>本局知识点回顾</h3>
+        <ul id="recap-list" class="recap-list"></ul>
+        <button id="btn-restart" class="btn btn-primary">再来一局</button>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
