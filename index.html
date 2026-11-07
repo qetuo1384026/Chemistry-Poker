@@ -11,6 +11,7 @@
     <header class="app-header">
       <h1>⚗ 化学扑克</h1>
       <p class="subtitle">人教版高中化学 · 化学物质模式 × 离子模式 · 知识对战卡牌</p>
+      <button id="btn-rules" class="btn btn-ghost rules-btn" type="button">📖 查看规则</button>
     </header>
 
     <!-- 模式与知识范围选择界面 -->
@@ -101,6 +102,69 @@
       </div>
     </section>
   </div>
+
+  <!-- 规则说明弹窗 -->
+  <div id="rules-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+      <div class="modal-head">
+        <h2 id="rules-title">玩法规则</h2>
+        <button id="btn-rules-close" class="modal-close" type="button" aria-label="关闭规则弹窗">✕</button>
+      </div>
+      <div class="modal-body">
+        <section class="rules-block">
+          <h3>对战模式</h3>
+          <ul>
+            <li><b>化学物质模式</b>：无机物与有机物之间的反应对战，可勾选无机、有机专题生成卡组。</li>
+            <li><b>离子模式</b>：仅使用离子卡，围绕离子共存、沉淀/气体/弱电解质生成与离子氧化还原对决。</li>
+          </ul>
+        </section>
+        <section class="rules-block">
+          <h3>对局流程</h3>
+          <ul>
+            <li>双方按手牌数发牌，初始先手随机决定。</li>
+            <li>每回合：先手方出 1 张牌 → 对方应答 1 张或放弃 → 结算该回合。</li>
+            <li>回合赢家自动成为下一回合先手；任一方手牌打空即结束，总分高者获胜。</li>
+          </ul>
+        </section>
+        <section class="rules-block">
+          <h3>应答判定（优先级从高到低）</h3>
+          <ol>
+            <li><b>特征反应方程式</b>精准配对：得分倍率 ×2。</li>
+            <li><b>离子相互作用</b>：生成沉淀、气体、水/弱电解质或离子氧化还原，倍率 ×2；同号离子相互排斥，异号但无上述变化时判为可共存，均属匹配失败。</li>
+            <li><b>类别通用规律</b>：酸碱中和、金属置换、氧化还原、物质检验等，倍率 ×1.5。</li>
+            <li>以上均不满足则匹配失败，该回合由先手方获胜。</li>
+          </ol>
+        </section>
+        <section class="rules-block">
+          <h3>放弃应答</h3>
+          <ul>
+            <li>应答方可选择「放弃应答」，不出牌也不消耗手牌。</li>
+            <li>放弃后由先手方赢得该回合，并获得「先出牌点数 ×1」的分数，连胜加成照常计算；放弃方不得分。</li>
+          </ul>
+        </section>
+        <section class="rules-block">
+          <h3>计分与组合技</h3>
+          <ul>
+            <li>回合得分 =（先出牌点数 + 应答牌点数）× 倍率 + 连胜加成。</li>
+            <li>连胜加成：连续赢得回合，每连胜 1 回合 +2 分，最多 +10 分。</li>
+            <li>离子组合技：应答成功且手牌集齐某组合技所需离子时，倍率再乘该组合 bonus（1.5~2 倍），日志会标注 ⚡组合技。</li>
+          </ul>
+        </section>
+        <section class="rules-block">
+          <h3>小提示</h3>
+          <ul>
+            <li>匹配失败的牌仍可打出，但该回合判先手方获胜，出牌前请留意提示。</li>
+            <li>开启「匹配提示」会高亮当前手牌中合法的应答牌。</li>
+          </ul>
+        </section>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" type="button" data-close>知道了</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

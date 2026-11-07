@@ -4,7 +4,7 @@
 //       否则先手方赢得该回合。回合赢家成为下一回合先手。
 
 import { matchCards, validResponses, findCombo } from './rules.js';
-import { trickPoints } from './scoring.js';
+import { trickPoints, forfeitPoints } from './scoring.js';
 import { buildDeck } from './cards.js';
 
 export const PHASE = { LEAD: 'lead', RESPOND: 'respond', OVER: 'over' };
@@ -93,9 +93,12 @@ export class Game {
       }
     }
 
-    let points = { base: 0, mult: 0, streakBonus: 0, total: 0 };
+    let points;
     if (respCard) {
       points = trickPoints(lead.card, respCard, success ? match : { multiplier: 1 }, winner.streak - 1);
+    } else {
+      // 放弃应答：应答方未投入牌，先手方按先出牌点数获得应得分数
+      points = forfeitPoints(lead.card, winner.streak - 1);
     }
     winner.score += points.total;
 

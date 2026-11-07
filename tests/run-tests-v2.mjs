@@ -142,12 +142,42 @@ t('handSize=1 最小卡组可完整对局', () => {
   assert(g.isOver);
   assert(g.result);
 });
-t('放弃应答不得分且日志正确', () => {
+t('放弃应答：先手方按先出牌点数得分且日志正确', () => {
   const g = new Game(ALL_CARDS.slice(0, 12), { handSize: 6, rng: identityRng });
-  g.playLead('player', g.players.player.hand[0].id);
+  const leadCard = g.players.player.hand[0];
+  g.playLead('player', leadCard.id);
   const e = g.playResponse('ai', null);
-  eq(e.points.total, 0, '放弃应答时不得消耗计分');
   eq(e.respCard, null);
+  eq(e.winnerId, 'player');
+  eq(e.points.base, leadCard.pt, '放弃应答基础分应为先出牌点数');
+  eq(e.points.mult, 1, '放弃应答无匹配倍率');
+  eq(e.points.total, leadCard.pt, '放弃应答得分应为先出牌点数');
+  eq(g.players.player.score, leadCard.pt, '分数应累加到先手方');
+});
+t('玩家放弃应答时 AI 获得应得分数并累计（v2.2 修复）', () => {
+  const deck = [byId('hcl'), byId('fe'), byId('naoh'), byId('cu')];
+  const g = new Game(deck, { handSize: 2, rng: seqRng([0.1]) }); // 初始先手 = AI
+  eq(g.leader, 'ai', '初始先手应为 AI');
+  const card = g.aiLead();
+  g.playLead('ai', card.id);
+  const e = g.playResponse('player', null);
+  eq(e.winnerId, 'ai');
+  eq(e.points.total, card.pt, 'AI 放弃应答收益应按先出牌点数');
+  eq(g.players.ai.score, card.pt, 'AI 分数应正确累加');
+  eq(g.players.player.score, 0, '放弃方不得分');
+});
+t('放弃应答连胜加成照常生效', () => {
+  const deck = [byId('ion-h'), byId('ion-oh'), byId('ion-ba'), byId('ion-cl')];
+  const g = new Game(deck, { handSize: 2, rng: seqRng([0.1]) });
+  const first = g.aiLead();
+  g.playLead('ai', first.id);
+  const e1 = g.playResponse('player', null);
+  eq(e1.points.streakBonus, 0, '首回合无连胜加成');
+  const second = g.aiLead();
+  g.playLead('ai', second.id);
+  const e2 = g.playResponse('player', null);
+  eq(e2.points.streakBonus, 2, '连赢第2回合应有 +2 加成');
+  eq(e2.points.total, second.pt + 2);
 });
 t('整局后两手牌消耗对称性检查（无放弃时）', () => {
   const g = new Game(ALL_CARDS, { handSize: 6, rng: seqRng([0.3, 0.7, 0.5]) });
