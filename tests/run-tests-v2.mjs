@@ -4,6 +4,7 @@ import { ALL_CARDS, MODULES, cardsByTopics } from '../js/data/index.js';
 import { matchCards, validResponses, findCombo, EQUATIONS, TRAPS } from '../js/core/rules.js';
 import { ION_CARDS, ION_INTERACTIONS, ION_COMBOS } from '../js/data/ions.js';
 import { Game, PHASE } from '../js/core/game.js';
+import { DEFAULT_SETTINGS, normalizeSettings, getSettings, saveSettings, resetSettings } from '../js/core/settings.js';
 
 let passed = 0, failed = 0;
 const byId = id => ALL_CARDS.find(c => c.id === id);
@@ -431,6 +432,44 @@ t('易错组合解析：CuS 不溶于稀盐酸', () => {
   const m = matchCards(byId('cus'), byId('hcl'));
   assert(!m.valid && TRAPS['cus+hcl'], `应命中易错解析：${JSON.stringify(m)}`);
   assert(m.expl.includes('不溶于稀盐酸'));
+});
+
+console.log('\n— 设置模块（v2.5）—');
+t('默认设置完整且为只读常量', () => {
+  eq(DEFAULT_SETTINGS.handSize, 6);
+  eq(DEFAULT_SETTINGS.volume, 60);
+  eq(DEFAULT_SETTINGS.difficulty, 'normal');
+  assert(Object.isFrozen(DEFAULT_SETTINGS), '默认设置应为冻结对象');
+});
+t('非法值收敛：音量 / 手牌 / 难度 / 动效', () => {
+  eq(normalizeSettings({ volume: -20 }).volume, 0, '音量下限');
+  eq(normalizeSettings({ volume: 150 }).volume, 100, '音量上限');
+  eq(normalizeSettings({ volume: 'abc' }).volume, 60, '非数字音量');
+  eq(normalizeSettings({ handSize: 7 }).handSize, 6, '非法手牌数');
+  eq(normalizeSettings({ difficulty: 'hard' }).difficulty, 'normal', '非法难度');
+  eq(normalizeSettings({ motion: 'none' }).motion, 'full', '非法动效');
+});
+t('昵称去空格、截断与空值回退', () => {
+  eq(normalizeSettings({ nickname: '  化学玩家  ' }).nickname, '化学玩家');
+  eq(normalizeSettings({ nickname: '一二三四五六七八九十十一十二' }).nickname.length, 12, '昵称长度');
+  eq(normalizeSettings({ nickname: '   ' }).nickname, '玩家', '空昵称回退');
+});
+t('保存 / 读取副本 / 恢复默认', () => {
+  const before = getSettings();
+  try {
+    const saved = saveSettings({ volume: 30, nickname: '小明', sfx: false });
+    eq(saved.volume, 30);
+    eq(saved.nickname, '小明');
+    assert(!saved.sfx, '音效应关闭');
+    const copy = getSettings();
+    copy.volume = 999;
+    eq(getSettings().volume, 30, 'getSettings 应返回副本');
+    const reset = resetSettings();
+    eq(reset.nickname, DEFAULT_SETTINGS.nickname, '恢复默认昵称');
+    eq(reset.volume, DEFAULT_SETTINGS.volume, '恢复默认音量');
+  } finally {
+    saveSettings(before);
+  }
 });
 
 console.log(`\n结果：${passed} 通过，${failed} 失败`);

@@ -3,6 +3,7 @@ import { Game, PHASE } from '../core/game.js';
 import { matchCards, validResponses } from '../core/rules.js';
 import { ctypeMeta } from '../core/cards.js';
 import { topicName } from '../data/index.js';
+import { playSfx } from '../core/sfx.js';
 
 const AI_THINK_MS = 800;
 const MODULE_LABEL = { inorganic: '无机', organic: '有机', ion: '离子' };
@@ -32,6 +33,13 @@ export function startBoard(root, config, { onEnd }) {
   const elRespSlot = $('#resp-card-slot');
   const elHint = $('#turn-hint');
   const elLog = $('#game-log');
+  const playerName = config.playerName || '玩家';
+  // 对局记录通过 innerHTML 渲染，昵称需转义后再拼接
+  const playerLogName = String(playerName).replace(/[&<>"']/g, ch => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+  const elPlayerLabel = $('#screen-board .score-box.player .label');
+  if (elPlayerLabel) elPlayerLabel.textContent = playerName;
 
   let lastEntry = null; // 最近一回合结果（用于牌桌展示区）
 
@@ -73,8 +81,8 @@ export function startBoard(root, config, { onEnd }) {
     for (const e of game.log) {
       const div = document.createElement('div');
       div.className = 'log-entry';
-      const who = id => (id === 'player' ? '你' : 'AI');
-      const responder = e.leader === 'player' ? 'AI' : '你';
+      const who = id => (id === 'player' ? playerLogName : 'AI');
+      const responder = e.leader === 'player' ? 'AI' : playerLogName;
       const leadTxt = `${who(e.leader)}出【${e.leadCard.name}】`;
       let line;
       if (!e.respCard) {
@@ -101,7 +109,7 @@ export function startBoard(root, config, { onEnd }) {
     const total = config.handSize;
     elRound.textContent = game.isOver
       ? '对局结束'
-      : `回合 ${game.round} / ${total}　·　${MODE_LABEL[config.mode] || ''}　·　先手：${game.leader === 'player' ? '你' : 'AI'}`;
+      : `回合 ${game.round} / ${total}　·　${MODE_LABEL[config.mode] || ''}　·　先手：${game.leader === 'player' ? playerName : 'AI'}`;
   }
 
   function renderTrick() {
@@ -165,6 +173,7 @@ export function startBoard(root, config, { onEnd }) {
   function playerLead(cardId) {
     if (finished || game.phase !== PHASE.LEAD || game.leader !== 'player') return;
     game.playLead('player', cardId);
+    playSfx('play');
     lastEntry = null;
     renderAll();
     hint('AI 思考应答中…');
@@ -178,6 +187,7 @@ export function startBoard(root, config, { onEnd }) {
     if (game.isOver) return finish();
     const pick = game.aiRespond(); // 可能为 null（AI 空手牌/放弃）
     lastEntry = game.playResponse('ai', pick);
+    playSfx('play');
     renderAll();
     nextAfterRound();
   }
@@ -194,6 +204,7 @@ export function startBoard(root, config, { onEnd }) {
       }
     }
     lastEntry = game.playResponse('player', cardId);
+    playSfx(cardId ? 'play' : 'click');
     renderAll();
     nextAfterRound();
   }
@@ -209,6 +220,7 @@ export function startBoard(root, config, { onEnd }) {
       const card = game.aiLead();
       if (!card) return finish(); // AI 无牌可出，对局结束
       game.playLead('ai', card.id);
+      playSfx('play');
       lastEntry = null;
       renderAll();
       hint('轮到你应答：打出一张能与之反应/转化的牌');

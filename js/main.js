@@ -1,14 +1,18 @@
 // 入口：启动封面、界面切换与对局生命周期管理
 import { renderSetup } from './ui/setup.js';
+import { renderSettings } from './ui/settings.js';
 import { startBoard } from './ui/board.js';
+import { getSettings, applyMotionPreference } from './core/settings.js';
+import { playSfx } from './core/sfx.js';
 
 const $ = sel => document.querySelector(sel);
-const DEFAULT_VERSION = '2.4.0';
+const DEFAULT_VERSION = '2.5.0';
 const MIN_LOADING_MS = 600;
 
 const screens = {
   cover: $('#screen-cover'),
   setup: $('#screen-setup'),
+  settings: $('#screen-settings'),
   board: $('#screen-board'),
   end: $('#screen-end')
 };
@@ -128,14 +132,6 @@ function setCoverEnabled(enabled) {
   for (const btn of coverButtons) btn.disabled = !enabled;
 }
 
-function scrollToSettingsHighlight() {
-  const panel = $('#panel-settings');
-  panel.classList.remove('panel-highlight');
-  void panel.offsetWidth; // 强制重排以重启动画
-  panel.classList.add('panel-highlight');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
 async function preloadCover() {
   const started = performance.now();
   const version = await fetchVersion();
@@ -151,16 +147,27 @@ async function preloadCover() {
   $('#btn-enter').focus({ preventScroll: true });
 }
 
-// ---- 封面入口 ----
+// ---- 封面入口：开始游戏 → 选择页；设置 → 独立设置页，两者互不共用 ----
+function goSetup() {
+  setupApi.applyDefaults();
+  playSfx('click');
+  switchView('setup', { animate: true });
+}
+
+function goSettings() {
+  settingsApi.syncFromSettings();
+  playSfx('click');
+  switchView('settings', { animate: true });
+}
+
 $('#btn-enter').addEventListener('click', () => {
   if (!coverReady) return;
-  switchView('setup', { animate: true });
+  goSetup();
 });
 
 $('#btn-cover-settings').addEventListener('click', () => {
   if (!coverReady) return;
-  switchView('setup', { animate: true });
-  setTimeout(scrollToSettingsHighlight, 320);
+  goSettings();
 });
 
 $('#btn-cover-about').addEventListener('click', (e) => openModal(aboutModal, e.currentTarget));
@@ -168,6 +175,13 @@ $('#btn-cover-about').addEventListener('click', (e) => openModal(aboutModal, e.c
 $('#btn-cover-help').addEventListener('click', (e) => setRulesOpen(true, e.currentTarget));
 
 $('#btn-back-cover').addEventListener('click', () => switchView('cover', { animate: true }));
+
+// ---- 设置页导航 ----
+$('#btn-settings-back').addEventListener('click', () => {
+  playSfx('click');
+  switchView('cover', { animate: true });
+});
+$('#btn-settings-enter').addEventListener('click', goSetup);
 
 // ---- 对局生命周期 ----
 // 清空上一局的结算与知识点回顾，避免新一局残留旧内容
@@ -187,12 +201,14 @@ function destroyBoard() {
 function startGame(config) {
   destroyBoard();
   resetEndScreen();
+  playSfx('click');
   show('board');
-  board = startBoard(screens.board, config, { onEnd: showEnd });
+  board = startBoard(screens.board, { ...config, playerName: getSettings().nickname }, { onEnd: showEnd });
 }
 
 function showEnd(game) {
   const result = game.result;
+  playSfx(result.winnerId === 'player' ? 'win' : result.winnerId === 'ai' ? 'lose' : 'click');
   $('#end-title').textContent =
     result.winnerId === 'player' ? '🎉 你赢了！' :
     result.winnerId === 'ai' ? '🤖 AI 获胜' : '🤝 平局';
@@ -223,11 +239,20 @@ function showEnd(game) {
 $('#btn-restart').addEventListener('click', () => {
   destroyBoard();
   resetEndScreen();
+  playSfx('click');
+  setupApi.applyDefaults();
   show('setup');
 });
 
 // ---- 初始化 ----
-renderSetup(screens.setup, { onStart: startGame });
+const setupApi = renderSetup(screens.setup, { onStart: startGame });
+const settingsApi = renderSettings(screens.settings, {
+  onChange: (s) => {
+    applyMotionPreference(s);
+    setupApi.applyDefaults();
+  }
+});
+applyMotionPreference();
 resetEndScreen();
 setCoverEnabled(false);
 show('cover');
