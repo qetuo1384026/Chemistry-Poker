@@ -33,7 +33,7 @@
         <p class="cover-subtitle">CHEMISTRY POKER</p>
         <p class="cover-desc">人教版高中化学 · 知识对战卡牌</p>
         <p class="cover-meta">
-          <span id="cover-version" class="version-badge">v2.4.0</span>
+          <span id="cover-version" class="version-badge">v2.5.0</span>
           <span class="cover-dot">·</span>
           <span>化学物质模式 × 离子模式</span>
         </p>
@@ -101,6 +101,85 @@
         </div>
         <div id="setup-error" class="error"></div>
         <button id="btn-start" class="btn btn-primary">开始对战</button>
+      </div>
+    </section>
+
+    <!-- 独立设置界面 -->
+    <section id="screen-settings" class="screen" hidden>
+      <div class="setup-bar">
+        <button id="btn-settings-back" class="btn btn-ghost" type="button">← 返回封面</button>
+      </div>
+      <div class="panel settings-panel">
+        <h2>设置</h2>
+        <p class="hint">调整音频、动效与对局默认参数，修改后自动保存在本机浏览器。</p>
+
+        <section class="settings-section">
+          <h3>① 音频</h3>
+          <div class="setting-row">
+            <label for="set-sfx">音效</label>
+            <input type="checkbox" id="set-sfx">
+            <span class="hint-inline">出牌、回合结算与操作按钮的提示音</span>
+          </div>
+          <div class="setting-row">
+            <label for="set-volume">音量</label>
+            <input type="range" id="set-volume" min="0" max="100" step="5">
+            <span id="set-volume-value" class="hint-inline volume-value">60%</span>
+            <button id="btn-sfx-test" class="btn btn-ghost btn-sm" type="button">试听</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>② 界面与动效</h3>
+          <div class="setting-row">
+            <label for="set-motion">动画效果</label>
+            <select id="set-motion">
+              <option value="full">完整（页面过渡与封面浮动）</option>
+              <option value="reduced">精简（关闭装饰性动画）</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3>③ 对局默认设置</h3>
+          <div class="setting-row">
+            <label for="set-hand-size">手牌数量</label>
+            <select id="set-hand-size">
+              <option value="5">5 张（快速局）</option>
+              <option value="6">6 张（标准局）</option>
+              <option value="8">8 张（进阶局）</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="set-difficulty">AI 难度</label>
+            <select id="set-difficulty">
+              <option value="easy">简单（随机应答）</option>
+              <option value="normal">标准（择优应答）</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="set-hints">匹配提示</label>
+            <input type="checkbox" id="set-hints">
+            <span class="hint-inline">高亮当前手牌中可正确应答的牌</span>
+          </div>
+          <p class="hint">以上三项会作为「开始游戏」选择页的默认值，可在对局前临时调整。</p>
+        </section>
+
+        <section class="settings-section">
+          <h3>④ 玩家与数据</h3>
+          <div class="setting-row">
+            <label for="set-nickname">玩家昵称</label>
+            <input id="set-nickname" class="text-input" type="text" maxlength="12" placeholder="玩家">
+            <span class="hint-inline">显示在对局积分板与对局记录中</span>
+          </div>
+          <div class="setting-row">
+            <button id="btn-settings-reset" class="btn btn-ghost" type="button">恢复默认设置</button>
+            <span id="settings-saved" class="settings-saved" role="status" aria-live="polite"></span>
+          </div>
+        </section>
+
+        <div class="settings-foot">
+          <button id="btn-settings-enter" class="btn btn-primary" type="button">进入游戏</button>
+        </div>
       </div>
     </section>
 
@@ -242,7 +321,7 @@
           <h3>技术与版本</h3>
           <ul>
             <li>纯前端实现：原生 ES Module + 无构建工具，本地 Node 静态服务器即可运行。</li>
-            <li>当前版本：<span id="about-version" class="version-badge">v2.4.0</span>　协议：MIT</li>
+            <li>当前版本：<span id="about-version" class="version-badge">v2.5.0</span>　协议：MIT</li>
             <li>项目仓库：<a href="https://github.com/qetuo1384026/Chemistry-Poker" target="_blank" rel="noopener">github.com/qetuo1384026/Chemistry-Poker</a></li>
           </ul>
         </section>
