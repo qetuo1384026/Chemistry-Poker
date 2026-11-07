@@ -33,7 +33,7 @@
         <p class="cover-subtitle">CHEMISTRY POKER</p>
         <p class="cover-desc">人教版高中化学 · 知识对战卡牌</p>
         <p class="cover-meta">
-          <span id="cover-version" class="version-badge">v2.5.0</span>
+          <span id="cover-version" class="version-badge">v2.6.0</span>
           <span class="cover-dot">·</span>
           <span>化学物质模式 × 离子模式</span>
         </p>
@@ -46,6 +46,7 @@
         <div class="cover-actions">
           <button id="btn-enter" class="btn btn-primary cover-main-btn" type="button" disabled>开始游戏</button>
           <div class="cover-sub-actions">
+            <button id="btn-cover-history" class="btn cover-ghost-btn" type="button" disabled>🏆 战绩</button>
             <button id="btn-cover-settings" class="btn cover-ghost-btn" type="button" disabled>⚙ 设置</button>
             <button id="btn-cover-about" class="btn cover-ghost-btn" type="button" disabled>ⓘ 关于</button>
             <button id="btn-cover-help" class="btn cover-ghost-btn" type="button" disabled>? 帮助</button>
@@ -180,6 +181,50 @@
         <div class="settings-foot">
           <button id="btn-settings-enter" class="btn btn-primary" type="button">进入游戏</button>
         </div>
+      </div>
+    </section>
+
+    <!-- 对局战绩界面 -->
+    <section id="screen-history" class="screen" hidden>
+      <div class="setup-bar">
+        <button id="btn-history-back" class="btn btn-ghost" type="button">← 返回封面</button>
+      </div>
+      <div class="panel history-panel">
+        <h2>对局战绩</h2>
+        <p class="hint">对局结束后会自动保存到本机，可在下方按结果、时间与模式检索。</p>
+
+        <div id="history-stats" class="history-stats"></div>
+
+        <div class="history-filters">
+          <label>结果
+            <select id="history-result">
+              <option value="all">全部</option>
+              <option value="win">胜</option>
+              <option value="lose">负</option>
+              <option value="draw">平</option>
+            </select>
+          </label>
+          <label>时间
+            <select id="history-range">
+              <option value="all">全部</option>
+              <option value="today">今天</option>
+              <option value="7d">近 7 天</option>
+              <option value="30d">近 30 天</option>
+            </select>
+          </label>
+          <label>模式
+            <select id="history-mode">
+              <option value="all">全部</option>
+              <option value="substance">化学物质模式</option>
+              <option value="ion">离子模式</option>
+            </select>
+          </label>
+          <button id="btn-history-clear" class="btn btn-ghost btn-sm history-clear" type="button">清空历史</button>
+        </div>
+
+        <div id="history-meta" class="history-meta"></div>
+        <div id="history-list" class="history-list"></div>
+        <button id="btn-history-more" class="btn btn-ghost history-more" type="button" hidden>加载更多</button>
       </div>
     </section>
 
@@ -321,7 +366,7 @@
           <h3>技术与版本</h3>
           <ul>
             <li>纯前端实现：原生 ES Module + 无构建工具，本地 Node 静态服务器即可运行。</li>
-            <li>当前版本：<span id="about-version" class="version-badge">v2.5.0</span>　协议：MIT</li>
+            <li>当前版本：<span id="about-version" class="version-badge">v2.6.0</span>　协议：MIT</li>
             <li>项目仓库：<a href="https://github.com/qetuo1384026/Chemistry-Poker" target="_blank" rel="noopener">github.com/qetuo1384026/Chemistry-Poker</a></li>
           </ul>
         </section>

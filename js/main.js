@@ -1,23 +1,27 @@
 // 入口：启动封面、界面切换与对局生命周期管理
 import { renderSetup } from './ui/setup.js';
 import { renderSettings } from './ui/settings.js';
+import { renderHistory } from './ui/history.js';
 import { startBoard } from './ui/board.js';
 import { getSettings, applyMotionPreference } from './core/settings.js';
+import { addHistoryRecord } from './core/history.js';
 import { playSfx } from './core/sfx.js';
 
 const $ = sel => document.querySelector(sel);
-const DEFAULT_VERSION = '2.5.0';
+const DEFAULT_VERSION = '2.6.0';
 const MIN_LOADING_MS = 600;
 
 const screens = {
   cover: $('#screen-cover'),
   setup: $('#screen-setup'),
   settings: $('#screen-settings'),
+  history: $('#screen-history'),
   board: $('#screen-board'),
   end: $('#screen-end')
 };
 
 let board = null; // 当前对局控制器（用于销毁旧局的 AI 定时器）
+let gameSession = null; // 当前对局的配置与开始时间（用于生成历史记录）
 let currentView = null;
 let coverReady = false;
 
@@ -105,7 +109,7 @@ document.addEventListener('keydown', (e) => {
 // ---- 启动封面：版本信息与加载状态 ----
 const coverLoading = $('#cover-loading');
 const coverLoadingText = $('#cover-loading-text');
-const coverButtons = ['#btn-enter', '#btn-cover-settings', '#btn-cover-about', '#btn-cover-help'].map($);
+const coverButtons = ['#btn-enter', '#btn-cover-history', '#btn-cover-settings', '#btn-cover-about', '#btn-cover-help'].map($);
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -170,6 +174,13 @@ $('#btn-cover-settings').addEventListener('click', () => {
   goSettings();
 });
 
+$('#btn-cover-history').addEventListener('click', () => {
+  if (!coverReady) return;
+  historyApi.refresh();
+  playSfx('click');
+  switchView('history', { animate: true });
+});
+
 $('#btn-cover-about').addEventListener('click', (e) => openModal(aboutModal, e.currentTarget));
 
 $('#btn-cover-help').addEventListener('click', (e) => setRulesOpen(true, e.currentTarget));
@@ -182,6 +193,11 @@ $('#btn-settings-back').addEventListener('click', () => {
   switchView('cover', { animate: true });
 });
 $('#btn-settings-enter').addEventListener('click', goSetup);
+
+$('#btn-history-back').addEventListener('click', () => {
+  playSfx('click');
+  switchView('cover', { animate: true });
+});
 
 // ---- 对局生命周期 ----
 // 清空上一局的结算与知识点回顾，避免新一局残留旧内容
@@ -202,13 +218,42 @@ function startGame(config) {
   destroyBoard();
   resetEndScreen();
   playSfx('click');
+  gameSession = { config, startedAt: Date.now() };
   show('board');
   board = startBoard(screens.board, { ...config, playerName: getSettings().nickname }, { onEnd: showEnd });
+}
+
+// 把一局对局整理为完整的历史记录（时间 / 结果 / 得分 / 配置 / 使用的卡牌 / 组合技）
+function buildHistoryRecord(game) {
+  const config = (gameSession && gameSession.config) || {};
+  const result = game.result;
+  const cards = [];
+  const combos = [];
+  for (const entry of game.log) {
+    const card = entry.leader === 'player' ? entry.leadCard : entry.respCard;
+    if (card && card.name) cards.push(card.name);
+    if (entry.match && entry.match.combo && entry.match.combo.name) combos.push(entry.match.combo.name);
+  }
+  return {
+    endedAt: new Date().toISOString(),
+    mode: config.mode || 'substance',
+    result: result.winnerId === 'player' ? 'win' : result.winnerId === 'ai' ? 'lose' : 'draw',
+    playerScore: result.playerScore,
+    aiScore: result.aiScore,
+    handSize: config.handSize,
+    difficulty: config.difficulty,
+    rounds: game.log.length,
+    durationMs: gameSession ? Date.now() - gameSession.startedAt : 0,
+    topicIds: config.topicIds || [],
+    playerCards: cards,
+    combos: [...new Set(combos)]
+  };
 }
 
 function showEnd(game) {
   const result = game.result;
   playSfx(result.winnerId === 'player' ? 'win' : result.winnerId === 'ai' ? 'lose' : 'click');
+  addHistoryRecord(buildHistoryRecord(game)); // 结束后自动增量保存到本地
   $('#end-title').textContent =
     result.winnerId === 'player' ? '🎉 你赢了！' :
     result.winnerId === 'ai' ? '🤖 AI 获胜' : '🤝 平局';
@@ -252,6 +297,7 @@ const settingsApi = renderSettings(screens.settings, {
     setupApi.applyDefaults();
   }
 });
+const historyApi = renderHistory(screens.history);
 applyMotionPreference();
 resetEndScreen();
 setCoverEnabled(false);
