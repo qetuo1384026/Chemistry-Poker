@@ -4,12 +4,60 @@
 
 ## 快速开始
 
+### 环境要求
+
+- Node.js 18 及以上（仅用于启动本地静态服务器与运行测试）
+- 现代浏览器（Chrome / Edge / Firefox / Safari，需支持 ES Module）
+
+### 方式一：使用内置服务器（推荐）
+
+1. 在项目根目录打开终端（Windows PowerShell / macOS / Linux 均可）。
+2. 启动服务：
+
 ```bash
-npm start      # 启动本地服务，默认 http://localhost:8080
-npm test       # 运行全部测试（基础用例 + 系统性用例）
+npm start
 ```
 
-也可直接使用任意静态服务器托管项目根目录（浏览器需支持 ES Module）。
+3. 终端出现 `化学扑克已启动: http://localhost:8080` 后，在浏览器访问：
+
+```
+http://localhost:8080
+```
+
+4. 在首页依次选择「对战模式」→ 勾选「知识范围」→ 设置手牌数与难度 → 点击「开始对战」即可游玩。
+5. 结束游玩时回到终端按 `Ctrl + C` 停止服务。
+
+### 方式二：使用其他静态服务器
+
+项目为纯前端（原生 ES Module，无构建步骤），任意静态服务器托管项目根目录即可：
+
+```bash
+# Python 3
+python -m http.server 8080
+
+# 或使用 VS Code 的 Live Server 插件，右键 index.html → Open with Live Server
+```
+
+> 注意：不能直接双击 `index.html` 用 `file://` 打开，浏览器会因同源策略拦截 ES Module 加载，导致页面空白。必须通过 HTTP 服务访问。
+
+### 端口被占用怎么办
+
+内置服务器固定监听 8080。若提示端口被占用（`EADDRINUSE`），可先释放端口：
+
+```powershell
+# Windows：查找并结束占用 8080 的进程
+Get-NetTCPConnection -LocalPort 8080 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
+```
+
+或把 `server.js` 末尾的 `listen(8080, ...)` 与提示文字改为其他端口（如 8090）后重新 `npm start`。
+
+### 运行测试
+
+```bash
+npm test
+```
+
+将依次执行基础用例与系统性用例（当前共 54 项），全部通过即表示核心规则与对局逻辑正常。
 
 ## 对战模式
 
@@ -52,6 +100,11 @@ server.js           本地静态服务器（端口 8080）
 3. 记录需按 **新增 / 修复 / 优化** 分类列出具体条目，避免含糊描述，便于回溯与验收。
 
 ## 更新记录
+
+### v2.2.1
+
+**文档**
+- 补充完整启动与游玩说明：环境要求、内置服务器启动步骤、其他静态服务器方式、`file://` 直接打开的限制、8080 端口占用处理、停止服务与测试命令。
 
 ### v2.2.0
 
