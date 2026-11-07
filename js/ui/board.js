@@ -5,6 +5,7 @@ import { ctypeMeta } from '../core/cards.js';
 import { topicName } from '../data/index.js';
 
 const AI_THINK_MS = 800;
+const MODULE_LABEL = { inorganic: '无机', organic: '有机', ion: '离子' };
 
 export function startBoard(root, config, { onEnd }) {
   const game = new Game(config.cards, {
@@ -37,7 +38,7 @@ export function startBoard(root, config, { onEnd }) {
       `<div class="ctype" style="background:${meta.color}">${meta.label}</div>` +
       `<div class="cname">${card.name}</div>` +
       `<div class="csub">${card.sub}</div>` +
-      `<div class="cmodule">${card.module === 'inorganic' ? '无机' : '有机'} · ${topicName(card.topic)}</div>`;
+      `<div class="cmodule">${MODULE_LABEL[card.module] || card.module} · ${topicName(card.topic)}</div>`;
     if (opts.onClick) el.addEventListener('click', opts.onClick);
     el.title = (card.tags || []).join(' · ');
     return el;
@@ -71,9 +72,10 @@ export function startBoard(root, config, { onEnd }) {
         line = `<b>回合${e.round}</b> ${leadTxt}，${responder}放弃应答 → <span class="lr-bad">${who(e.winnerId)}得 ${e.points.total} 分</span>`;
       } else {
         const ok = e.success;
+        const comboTxt = ok && e.match.combo ? ` ⚡组合技【${e.match.combo.name}】` : '';
         line = `<b>回合${e.round}</b> ${leadTxt}，${responder}应答【${e.respCard.name}】 ` +
           (ok
-            ? `→ <span class="lr-good">✓ ${e.match.name}</span> ${who(e.winnerId)}得 ${e.points.total} 分`
+            ? `→ <span class="lr-good">✓ ${e.match.name}${comboTxt}</span> ${who(e.winnerId)}得 ${e.points.total} 分`
             : `→ <span class="lr-bad">✗ 匹配失败</span> ${who(e.winnerId)}得 ${e.points.total} 分`);
       }
       const expl = e.match.eq
@@ -162,7 +164,7 @@ export function startBoard(root, config, { onEnd }) {
 
   function aiRespondTurn() {
     if (game.isOver) return finish();
-    const pick = game.aiRespond();
+    const pick = game.aiRespond(); // 可能为 null（AI 空手牌/放弃）
     lastEntry = game.playResponse('ai', pick);
     renderAll();
     nextAfterRound();
@@ -184,17 +186,23 @@ export function startBoard(root, config, { onEnd }) {
     nextAfterRound();
   }
 
+  function aiLeadTurn() {
+    if (game.isOver) return finish();
+    hint('AI 先手出牌中…');
+    setTimeout(() => {
+      const card = game.aiLead();
+      if (!card) return finish(); // AI 无牌可出，对局结束
+      game.playLead('ai', card.id);
+      lastEntry = null;
+      renderAll();
+      hint('轮到你应答：打出一张能与之反应/转化的牌');
+    }, AI_THINK_MS);
+  }
+
   function nextAfterRound() {
     if (game.isOver) return finish();
     if (game.leader === 'ai') {
-      hint('AI 先手出牌中…');
-      setTimeout(() => {
-        const card = game.aiLead();
-        game.playLead('ai', card.id);
-        lastEntry = null;
-        renderAll();
-        hint('轮到你应答：打出一张能与之反应/转化的牌');
-      }, AI_THINK_MS);
+      aiLeadTurn();
     } else {
       hint('轮到你先出牌');
     }
@@ -206,7 +214,11 @@ export function startBoard(root, config, { onEnd }) {
     onEnd(game);
   }
 
-  // 初始渲染
+  // 初始渲染：初始先手随机，若 AI 先手则由其先出牌
   renderAll();
-  hint('对局开始！轮到你先出牌');
+  if (game.leader === 'ai') {
+    aiLeadTurn();
+  } else {
+    hint('对局开始！轮到你先出牌');
+  }
 }
