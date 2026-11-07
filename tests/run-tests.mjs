@@ -33,7 +33,7 @@ t('卡牌总量与数据完整性', () => {
 });
 t('按专题筛选', () => {
   const cards = cardsByTopics(['org-hydrocarbon']);
-  eq(cards.length, 5);
+  eq(cards.length, 6);
   assert(cards.every(c => c.topic === 'org-hydrocarbon'));
 });
 t('方程式库无键冲突且覆盖度足够', () => {
