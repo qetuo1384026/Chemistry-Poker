@@ -11,6 +11,24 @@ const screens = {
 
 let board = null; // 当前对局控制器（用于销毁旧局的 AI 定时器）
 
+// ---- 规则弹窗 ----
+const rulesModal = $('#rules-modal');
+
+function setRulesOpen(open) {
+  rulesModal.hidden = !open;
+  document.body.classList.toggle('modal-open', open);
+  if (open) $('#btn-rules-close').focus();
+  else $('#btn-rules').focus();
+}
+
+$('#btn-rules').addEventListener('click', () => setRulesOpen(true));
+rulesModal.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close]')) setRulesOpen(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !rulesModal.hidden) setRulesOpen(false);
+});
+
 function show(name) {
   for (const key of Object.keys(screens)) {
     screens[key].hidden = key !== name;
