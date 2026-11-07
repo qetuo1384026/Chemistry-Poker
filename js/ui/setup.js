@@ -1,5 +1,6 @@
 // 模式与知识范围选择界面：一级模式互斥切换 + 当前模式下的专题勾选 + 对局设置
 import { MODULES, cardsByTopics } from '../data/index.js';
+import { getSettings } from '../core/settings.js';
 
 export const MIN_DECK_FACTOR = 2; // 卡组至少 = 手牌数 × 2
 
@@ -26,8 +27,19 @@ export function renderSetup(container, { onStart }) {
   const deckCount = container.querySelector('#deck-count');
   const error = container.querySelector('#setup-error');
   const handSizeSel = container.querySelector('#hand-size');
+  const difficultySel = container.querySelector('#difficulty');
+  const hintsCb = container.querySelector('#show-hints');
 
   let currentMode = GAME_MODES[0];
+
+  // 应用设置页中的「对局默认设置」
+  function applyDefaults() {
+    const { handSize, difficulty, showHints } = getSettings();
+    handSizeSel.value = String(handSize);
+    difficultySel.value = difficulty;
+    hintsCb.checked = showHints;
+    refreshCount();
+  }
 
   // ---- 一级模式卡片 ----
   function renderModes() {
@@ -129,12 +141,14 @@ export function renderSetup(container, { onStart }) {
       cards,
       topicIds: topics,
       handSize,
-      difficulty: container.querySelector('#difficulty').value,
-      showHints: container.querySelector('#show-hints').checked
+      difficulty: difficultySel.value,
+      showHints: hintsCb.checked
     });
   });
 
   renderModes();
   renderTree();
-  refreshCount();
+  applyDefaults();
+
+  return { applyDefaults };
 }
