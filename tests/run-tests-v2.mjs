@@ -5,6 +5,7 @@ import { matchCards, validResponses, findCombo, EQUATIONS, TRAPS } from '../js/c
 import { ION_CARDS, ION_INTERACTIONS, ION_COMBOS } from '../js/data/ions.js';
 import { Game, PHASE } from '../js/core/game.js';
 import { DEFAULT_SETTINGS, normalizeSettings, getSettings, saveSettings, resetSettings } from '../js/core/settings.js';
+import { MAX_RECORDS, normalizeRecord, addHistoryRecord, loadHistory, clearHistory, queryHistory, historyStats } from '../js/core/history.js';
 
 let passed = 0, failed = 0;
 const byId = id => ALL_CARDS.find(c => c.id === id);
@@ -470,6 +471,68 @@ t('保存 / 读取副本 / 恢复默认', () => {
   } finally {
     saveSettings(before);
   }
+});
+
+console.log('\n— 历史记录模块（v2.6）—');
+t('记录校验：非法时间丢弃，缺失字段补默认并收敛数值', () => {
+  eq(normalizeRecord(null), null, '空记录');
+  eq(normalizeRecord({ endedAt: 'not-a-date' }), null, '非法时间');
+  const rec = normalizeRecord({ endedAt: new Date().toISOString(), playerScore: '42', aiScore: -3 });
+  eq(rec.playerScore, 42, '字符串分数转数字');
+  eq(rec.aiScore, 0, '负分归零');
+  eq(rec.mode, 'substance', '默认模式');
+  eq(rec.result, 'draw', '默认结果');
+  eq(rec.handSize, 6, '默认手牌数');
+  eq(rec.difficulty, 'normal', '默认难度');
+});
+t('增量追加：最新置顶、倒序排列、上限截断', () => {
+  clearHistory();
+  const base = Date.now();
+  for (let i = 0; i < MAX_RECORDS + 10; i++) {
+    addHistoryRecord({
+      endedAt: new Date(base - i * 60000).toISOString(),
+      result: i % 2 ? 'win' : 'lose',
+      playerScore: i
+    });
+  }
+  const rows = loadHistory();
+  eq(rows.length, MAX_RECORDS, '超出上限应截断');
+  eq(rows[0].playerScore, 0, '最新记录置顶');
+  assert(Date.parse(rows[0].endedAt) >= Date.parse(rows[1].endedAt), '记录应按时间倒序');
+});
+t('按结果 / 模式 / 时间筛选与统计', () => {
+  clearHistory();
+  const now = Date.now();
+  addHistoryRecord({ endedAt: new Date(now - 2 * 3600000).toISOString(), result: 'win', mode: 'ion', playerScore: 30, aiScore: 10 });
+  addHistoryRecord({ endedAt: new Date(now - 10 * 86400000).toISOString(), result: 'lose', mode: 'substance', playerScore: 10, aiScore: 40 });
+  addHistoryRecord({ endedAt: new Date(now - 40 * 86400000).toISOString(), result: 'win', mode: 'substance', playerScore: 20, aiScore: 15 });
+
+  eq(queryHistory({ result: 'win' }).length, 2, '按结果筛选');
+  eq(queryHistory({ result: 'lose' }).length, 1, '按结果筛选（负）');
+  eq(queryHistory({ mode: 'ion' }).length, 1, '按模式筛选');
+  eq(queryHistory({ range: '7d' }).length, 1, '近 7 天');
+  eq(queryHistory({ range: '30d' }).length, 2, '近 30 天');
+  eq(queryHistory({ range: 'all' }).length, 3, '全部时间');
+
+  const stats = historyStats(queryHistory({ result: 'win' }));
+  eq(stats.wins, 2, '胜场数');
+  eq(stats.total, 2, '筛选总数');
+  eq(stats.winRate, 100, '胜率');
+  eq(stats.best, 30, '最高分');
+});
+t('大量记录筛选耗时在合理范围', () => {
+  const started = performance.now();
+  const rows = queryHistory({ result: 'all', mode: 'all', range: '30d' });
+  const elapsed = performance.now() - started;
+  assert(elapsed < 50, `筛选 ${rows.length} 条耗时 ${elapsed.toFixed(1)}ms，应小于 50ms`);
+});
+t('清空历史与空数据统计', () => {
+  clearHistory();
+  eq(loadHistory().length, 0, '清空后应为空');
+  const stats = historyStats(loadHistory());
+  eq(stats.total, 0, '空历史总数');
+  eq(stats.winRate, 0, '空历史胜率');
+  eq(stats.best, 0, '空历史最高分');
 });
 
 console.log(`\n结果：${passed} 通过，${failed} 失败`);
