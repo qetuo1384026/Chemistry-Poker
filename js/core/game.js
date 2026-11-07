@@ -3,7 +3,7 @@
 // 规则：应答牌若能与先出牌发生匹配（反应/转化/比较压制），应答方赢得该回合；
 //       否则先手方赢得该回合。回合赢家成为下一回合先手。
 
-import { matchCards, validResponses } from './rules.js';
+import { matchCards, validResponses, findCombo } from './rules.js';
 import { trickPoints } from './scoring.js';
 import { buildDeck } from './cards.js';
 
@@ -28,7 +28,8 @@ export class Game {
     const deck = buildDeck(cards, rng);
     this.players.player.hand = deck.slice(0, handSize);
     this.players.ai.hand = deck.slice(handSize, handSize * 2);
-    this.leader = 'player';
+    // 初始先手由 rng 随机决定，避免永远玩家先手
+    this.leader = this.rng() < 0.5 ? 'ai' : 'player';
     this.currentLead = null; // { pid, card }
     this.phase = PHASE.LEAD;
     this.round = 1;
@@ -83,6 +84,15 @@ export class Game {
     winner.streak += 1;
     this.players[loserId].streak = 0;
 
+    // 组合技：应答成功且打出离子牌时，若赢家手牌（含刚打出的应答牌）集齐某组合，倍率追加 bonus
+    if (success && respCard.ctype === 'ion') {
+      const combo = findCombo([...winner.hand, respCard]);
+      if (combo) {
+        match.combo = combo;
+        match.multiplier *= combo.bonus;
+      }
+    }
+
     let points = { base: 0, mult: 0, streakBonus: 0, total: 0 };
     if (respCard) {
       points = trickPoints(lead.card, respCard, success ? match : { multiplier: 1 }, winner.streak - 1);
@@ -104,8 +114,9 @@ export class Game {
     // 进入下一回合
     this.leader = winnerId;
     this.currentLead = null;
-    const handsEmpty = this.players.player.hand.length === 0 && this.players.ai.hand.length === 0;
-    if (handsEmpty) {
+    // 任一方手牌为空即结束（空手牌者无法行动，继续对局会导致 AI 决策崩溃）
+    const anyHandEmpty = this.players.player.hand.length === 0 || this.players.ai.hand.length === 0;
+    if (anyHandEmpty) {
       this.phase = PHASE.OVER;
     } else {
       this.round += 1;
@@ -130,15 +141,17 @@ export class Game {
   /** AI 先手出牌：简单=随机；标准=出点数最低的牌（保留强牌应答） */
   aiLead() {
     const hand = this.players.ai.hand;
+    if (hand.length === 0) return null;
     if (this.difficulty === 'easy') {
       return hand[Math.floor(this.rng() * hand.length)];
     }
     return [...hand].sort((x, y) => x.pt - y.pt)[0];
   }
 
-  /** AI 应答：简单=随机合法牌；标准=选得分最高的合法牌；无合法牌则弃掉点数最低的牌 */
+  /** AI 应答：简单=随机合法牌；标准=选得分最高的合法牌；无合法牌则弃掉点数最低的牌；空手牌返回 null */
   aiRespond() {
     const hand = this.players.ai.hand;
+    if (hand.length === 0) return null;
     const lead = this.currentLead.card;
     const valids = validResponses(hand, lead);
     if (valids.length === 0) {

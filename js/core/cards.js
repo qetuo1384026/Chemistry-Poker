@@ -14,7 +14,8 @@ export const CTYPE_META = {
   ester:       { label: '酯',         color: '#9e9d24' },
   bio:         { label: '生命有机物', color: '#f06292' },
   polymer:     { label: '高分子',     color: '#78909c' },
-  reagent:     { label: '检验试剂',   color: '#5c6bc0' }
+  reagent:     { label: '检验试剂',   color: '#5c6bc0' },
+  ion:         { label: '离子',       color: '#26a69a' }
 };
 
 export function ctypeMeta(ctype) {

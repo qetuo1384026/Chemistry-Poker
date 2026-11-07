@@ -38,7 +38,7 @@ t('按专题筛选', () => {
 });
 t('方程式库无键冲突且覆盖度足够', () => {
   const n = Object.keys(EQUATIONS).length;
-  assert(n >= 55, `方程式仅 ${n} 条`);
+  assert(n >= 90, `方程式仅 ${n} 条`);
 });
 
 console.log('— 卡牌工具 —');
@@ -88,13 +88,9 @@ t('有机转化链相邻可匹配', () => {
   assert(m2.valid, JSON.stringify(m2));
 });
 
-console.log('— 匹配规则：比较与易错 —');
-t('同类比较：Cl2 氧化性压住 Br2', () => {
+console.log('— 匹配规则：易错陷阱 —');
+t('同族单质无比较压制（比较机制已移除）', () => {
   const m = matchCards(byId('br2'), byId('cl2'));
-  assert(m.valid && m.kind === 'compare' && m.multiplier === 1, JSON.stringify(m));
-});
-t('同类比较：Br2 压不住 Cl2', () => {
-  const m = matchCards(byId('cl2'), byId('br2'));
   assert(!m.valid, JSON.stringify(m));
 });
 t('钝化：Al 遇浓硫酸', () => {
@@ -138,7 +134,7 @@ t('发牌与初始状态', () => {
   eq(g.players.player.hand.length, 6);
   eq(g.players.ai.hand.length, 6);
   eq(g.phase, PHASE.LEAD);
-  eq(g.leader, 'player');
+  assert(['player', 'ai'].includes(g.leader), '初始先手应随机为玩家或AI');
 });
 t('卡牌不足时拒绝开局', () => {
   let threw = false;

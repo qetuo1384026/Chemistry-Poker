@@ -1,9 +1,10 @@
 // 数据总入口：汇总知识模块、专题树与全部卡牌
 import { INORGANIC_MODULE, INORGANIC_CARDS } from './inorganic.js';
 import { ORGANIC_MODULE, ORGANIC_CARDS } from './organic.js';
+import { ION_MODULE, ION_CARDS } from './ions.js';
 
-export const MODULES = [INORGANIC_MODULE, ORGANIC_MODULE];
-export const ALL_CARDS = [...INORGANIC_CARDS, ...ORGANIC_CARDS];
+export const MODULES = [INORGANIC_MODULE, ORGANIC_MODULE, ION_MODULE];
+export const ALL_CARDS = [...INORGANIC_CARDS, ...ORGANIC_CARDS, ...ION_CARDS];
 
 // topicId -> { topic, moduleId, moduleTitle }
 export const TOPIC_INFO = {};

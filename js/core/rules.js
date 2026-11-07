@@ -1,8 +1,10 @@
 // 匹配规则引擎：判断「应答牌」能否接住「先出牌」
 // 规则优先级：① 特征反应方程式库（精准配对，倍率×2）
-//            ② 类别通用反应规律（倍率 1.5）
-//            ③ 同类性质比较压制（倍率×1.0）
+//            ② 离子专属判定（双方均为离子卡：沉淀/气体/弱电解质/氧化还原，倍率×2）
+//            ③ 类别通用反应规律（倍率 1.5）
 //            ④ 均不满足 → 匹配失败；若属于典型易错组合，返回教学解析
+
+import { ION_INTERACTIONS, ION_COMBOS } from '../data/ions.js';
 
 const E = (a, b, name, eq, expl) => [a, b, { name, eq, expl }];
 
@@ -87,7 +89,70 @@ const PAIRS = [
   E('kmno4', 'toluene', '侧链氧化', '甲苯 --KMnO₄/H⁺--> 苯甲酸', '苯环活化了侧链甲基——甲苯能使酸性KMnO₄褪色而苯不能'),
   E('ethanal', 'kmno4', '醛基还原性', '乙醛 --KMnO₄/H⁺--> 乙酸', '醛基具还原性，使酸性KMnO₄褪色'),
   E('ethanol', 'kmno4', '醇的氧化', '乙醇 --KMnO₄/H⁺--> 乙醛/乙酸', '乙醇被强氧化剂氧化，溶液褪色'),
-  E('hno3', 'protein', '蛋白质显色反应', '蛋白质 + 浓HNO₃ =△= 变黄', '含苯环的蛋白质遇浓硝酸变黄——颜色反应')
+  E('hno3', 'protein', '蛋白质显色反应', '蛋白质 + 浓HNO₃ =△= 变黄', '含苯环的蛋白质遇浓硝酸变黄——颜色反应'),
+
+  // ===== v2.0 扩充：复分解与离子反应 =====
+  E('caoh2', 'na2co3', '复分解反应', 'Ca(OH)₂ + Na₂CO₃ = CaCO₃↓ + 2NaOH', '工业上制取烧碱的原理'),
+  E('hno3', 'nh3', '酸与碱性气体', 'NH₃ + HNO₃ = NH₄NO₃', '产生白烟——检验氨气'),
+  E('h2so4', 'nh3', '酸与碱性气体', '2NH₃ + H₂SO₄ = (NH₄)₂SO₄', '氨气被硫酸吸收，不可用浓硫酸干燥氨气'),
+  E('agno3', 'fecl3', '氯离子检验', '3AgNO₃ + FeCl₃ = 3AgCl↓ + Fe(NO₃)₃', '生成白色AgCl沉淀'),
+  E('agno3', 'bacl2', '氯离子检验', '2AgNO₃ + BaCl₂ = 2AgCl↓ + Ba(NO₃)₂', '生成白色AgCl沉淀'),
+  E('fecl3', 'naoh', '复分解反应', 'FeCl₃ + 3NaOH = Fe(OH)₃↓ + 3NaCl', '生成红褐色Fe(OH)₃沉淀'),
+  E('cuso4', 'naoh', '复分解反应', 'CuSO₄ + 2NaOH = Cu(OH)₂↓ + Na₂SO₄', '生成蓝色絮状Cu(OH)₂沉淀'),
+  E('fecl2', 'naoh', '复分解反应', 'FeCl₂ + 2NaOH = Fe(OH)₂↓ + 2NaCl', '白色絮状沉淀迅速变灰绿色，最终变红褐色'),
+  E('caoh2', 'nh4cl', '实验室制氨气', '2NH₄Cl + Ca(OH)₂ =△= CaCl₂ + 2NH₃↑ + 2H₂O', '固体加热制氨气的标准方法'),
+  E('na2o2', 'so2', '过氧化物的氧化性', 'Na₂O₂ + SO₂ = Na₂SO₄', 'Na₂O₂把SO₂氧化为硫酸钠'),
+  E('co2', 'na2co3', '正盐转酸式盐', 'Na₂CO₃ + CO₂ + H₂O = 2NaHCO₃', '向饱和碳酸钠溶液通CO₂会析出NaHCO₃晶体'),
+  E('caco3', 'co2', '溶洞形成', 'CaCO₃ + CO₂ + H₂O = Ca(HCO₃)₂', '石灰岩被含CO₂的流水溶解，形成喀斯特地貌'),
+  E('nahco3', 'naoh', '酸式盐与碱', 'NaHCO₃ + NaOH = Na₂CO₃ + H₂O', '酸式盐继续与碱反应生成正盐'),
+  E('h2so4', 'nacl', '难挥发制易挥发', '2NaCl + H₂SO₄(浓) =△= Na₂SO₄ + 2HCl↑', '实验室制氯化氢气体的原理'),
+  E('hno3', 'na2co3', '强酸制弱酸', 'Na₂CO₃ + 2HNO₃ = 2NaNO₃ + H₂O + CO₂↑', '强酸制弱酸，放出二氧化碳'),
+  E('h2so4', 'na2co3', '强酸制弱酸', 'Na₂CO₃ + H₂SO₄ = Na₂SO₄ + H₂O + CO₂↑', '强酸制弱酸'),
+  E('caco3', 'hno3', '强酸制弱酸', 'CaCO₃ + 2HNO₃ = Ca(NO₃)₂ + H₂O + CO₂↑', '硝酸溶解碳酸钙'),
+  E('h2so4', 'nahco3', '强酸制弱酸', '2NaHCO₃ + H₂SO₄ = Na₂SO₄ + 2H₂O + 2CO₂↑', '泡沫灭火器的反应原理之一'),
+  E('hno3', 'nahco3', '强酸制弱酸', 'NaHCO₃ + HNO₃ = NaNO₃ + H₂O + CO₂↑', '强酸制弱酸'),
+  E('na2o2', 'hcl', '过氧化物与酸', '2Na₂O₂ + 4HCl = 4NaCl + 2H₂O + O₂↑', '先与水反应生成NaOH和O₂，再被酸中和'),
+
+  // ===== v2.0 扩充：金属与置换 =====
+  E('al', 'hcl', '金属与酸置换', '2Al + 6HCl = 2AlCl₃ + 3H₂↑', '铝在氢之前，可与盐酸反应放氢气'),
+  E('al', 'naoh', '铝的两性', '2Al + 2NaOH + 2H₂O = 2NaAlO₂ + 3H₂↑', '铝既能与酸又能与强碱反应放出氢气'),
+  E('co2', 'mg', '镁在CO₂中燃烧', '2Mg + CO₂ =点燃= 2MgO + C', 'CO₂不能扑灭活泼金属的火灾'),
+  E('fe', 'fecl3', '归中反应', '2FeCl₃ + Fe = 3FeCl₂', 'Fe把Fe³⁺还原为Fe²⁺，配制FeCl₂溶液加铁钉防氧化'),
+  E('cuso4', 'zn', '金属置换', 'Zn + CuSO₄ = ZnSO₄ + Cu', '铜锌原电池的总反应'),
+  E('hcl', 'zn', '金属与酸置换', 'Zn + 2HCl = ZnCl₂ + H₂↑', '锌与盐酸快速放氢'),
+  E('ca', 'hcl', '金属与酸置换', 'Ca + 2HCl = CaCl₂ + H₂↑', '钙非常活泼，与酸剧烈反应'),
+  E('hcl', 'mg', '金属与酸置换', 'Mg + 2HCl = MgCl₂ + H₂↑', '镁与盐酸剧烈反应放氢'),
+  E('al', 'cuso4', '金属置换', '2Al + 3CuSO₄ = Al₂(SO₄)₃ + 3Cu', '铝比铜活泼，置换出红色铜'),
+  E('cl2', 'mg', '金属与氯气', 'Mg + Cl₂ =点燃= MgCl₂', '镁在氯气中剧烈燃烧'),
+  E('cl2', 'na', '金属与氯气', '2Na + Cl₂ =△= 2NaCl', '钠在氯气中燃烧，产生白烟'),
+  E('ethanol', 'k', '醇羟基与活泼金属', '2C₂H₅OH + 2K → 2C₂H₅OK + H₂↑', '钾比钠更活泼，与乙醇反应更剧烈'),
+
+  // ===== v2.0 扩充：氧化还原与燃烧 =====
+  E('br2', 'fecl2', 'Fe²⁺的还原性', '2FeCl₂ + Br₂ = 2FeCl₃', 'Br₂氧化性强于Fe³⁺，可氧化Fe²⁺'),
+  E('br2', 'so2', '氧化还原', 'SO₂ + Br₂ + 2H₂O = H₂SO₄ + 2HBr', 'SO₂使溴水褪色，体现其还原性而非漂白性'),
+  E('i2', 'so2', '氧化还原', 'SO₂ + I₂ + 2H₂O = H₂SO₄ + 2HI', '碘量法定量测定SO₂的原理'),
+  E('nh3', 'o2', '氨的催化氧化', '4NH₃ + 5O₂ =催化剂/△= 4NO + 6H₂O', '工业制硝酸的第一步反应'),
+  E('h2', 'n2', '合成氨', 'N₂ + 3H₂ ⇌ 2NH₃', '高温高压催化剂，可逆反应，工业合成氨'),
+  E('n2', 'o2', '氮气与氧气', 'N₂ + O₂ =放电= 2NO', '雷雨发庄稼：雷电固氮的第一步'),
+  E('c', 'hno3', '浓硝酸氧化碳', 'C + 4HNO₃(浓) =△= CO₂↑ + 4NO₂↑ + 2H₂O', '浓硝酸体现强氧化性'),
+  E('naoh', 'si', '硅与强碱', 'Si + 2NaOH + H₂O = Na₂SiO₃ + 2H₂↑', '硅与强碱溶液反应放氢气'),
+  E('c', 'sio2', '工业制粗硅', 'SiO₂ + 2C =高温= Si + 2CO↑', '碳在高温下还原二氧化硅'),
+  E('c', 'cao', '制电石', 'CaO + 3C =高温= CaC₂ + CO↑', '电炉中高温反应制取电石'),
+  E('ch4', 'o2', '甲烷燃烧', 'CH₄ + 2O₂ =点燃= CO₂ + 2H₂O', '淡蓝色火焰，是最简单的有机物燃烧'),
+  E('c2h2', 'o2', '乙炔燃烧', '2C₂H₂ + 5O₂ =点燃= 4CO₂ + 2H₂O', '氧炔焰温度高达3000℃，用于切割焊接金属'),
+  E('ethanol', 'o2', '乙醇燃烧', 'C₂H₅OH + 3O₂ =点燃= 2CO₂ + 3H₂O', '酒精灯燃烧，清洁燃料'),
+  E('s', 'o2', '硫燃烧', 'S + O₂ =点燃= SO₂', '蓝紫色火焰，生成有刺激性气味的气体'),
+  E('caco3', 'sio2', '玻璃工业', 'SiO₂ + CaCO₃ =高温= CaSiO₃ + CO₂↑', '制普通玻璃的主要反应之一'),
+
+  // ===== v2.0 扩充：有机 =====
+  E('benzene', 'hno3', '硝化反应', 'C₆H₆ + HNO₃ =浓H₂SO₄/55-60℃= C₆H₅NO₂ + H₂O', '苯环上的氢被硝基取代，生成硝基苯'),
+  E('formic', 'naoh', '酸碱中和', 'HCOOH + NaOH → HCOONa + H₂O', '甲酸是最简单的羧酸，与强碱中和'),
+  E('acetic', 'caco3', '强酸制弱酸', '2CH₃COOH + CaCO₃ → (CH₃COO)₂Ca + H₂O + CO₂↑', '醋酸除水垢的原理，证明酸性：乙酸>碳酸'),
+  E('naoh', 'oil', '皂化反应', '油脂 + 3NaOH =△= 3高级脂肪酸钠 + 甘油', '油脂在碱性条件下的水解——制肥皂'),
+  E('c2h4', 'h2', '加成反应', 'CH₂=CH₂ + H₂ =Ni/△= C₂H₆', '碳碳双键催化加氢'),
+  E('c2h2', 'h2', '加成反应', 'CH≡CH + H₂ =Ni/△= CH₂=CH₂', '控制条件可使乙炔加氢停留在乙烯'),
+  E('ethanal', 'h2', '醛的还原', 'CH₃CHO + H₂ =Ni/△= C₂H₅OH', '醛基加氢还原为伯醇，属于加成反应'),
+  E('cuoh2', 'formic', '醛基检验', 'HCOOH + 2Cu(OH)₂ =△= Cu₂O↓ + CO₂ + 3H₂O', '甲酸含醛基，加热生成砖红色沉淀')
 ];
 
 export const EQUATIONS = {};
@@ -111,7 +176,12 @@ const TRAP_PAIRS = [
   T('kmno4', 'pe', '聚乙烯中没有碳碳双键，不能被酸性KMnO₄氧化褪色'),
   T('benzene', 'kmno4', '苯不能使酸性KMnO₄褪色——说明苯环中不存在普通的碳碳双键'),
   T('caoh2', 'caco3', '两者都是难溶物/弱反应体系，不发生复分解（这是澄清石灰水变浑浊的逆过程）'),
-  T('na2co3', 'phenol', '苯酚酸性比碳酸弱，只能与Na₂CO₃生成NaHCO₃，高中阶段不视为有效反应')
+  T('na2co3', 'phenol', '苯酚酸性比碳酸弱，只能与Na₂CO₃生成NaHCO₃，高中阶段不视为有效反应'),
+  T('naoh', 'nh3', 'NaOH与NH₃都是碱性物质，二者不反应'),
+  T('h2co3', 'nacl', '碳酸是弱酸，不能与NaCl反应——弱酸不能制强酸'),
+  T('fecl2', 'i2', 'I₂的氧化性弱于Fe³⁺，不能把Fe²⁺氧化为Fe³⁺（逆反应2FeCl₃+2KI却可以）'),
+  T('hcl', 'h2so4', '盐酸与硫酸都是酸，二者不发生化学反应'),
+  T('nacl', 'na2co3', '两者都是可溶性钠盐，混合后无沉淀、气体或水生成，不满足复分解反应条件')
 ];
 export const TRAPS = {};
 for (const [a, b, expl] of TRAP_PAIRS) {
@@ -219,24 +289,6 @@ const GENERIC_RULES = [
         expl: '可逆反应，浓硫酸作催化剂和吸水剂'
       };
     }
-  },
-  // 同类比较压制：应答方强度更高才能接住
-  (a, b) => {
-    if (a.ctype === b.ctype && a.rank != null && b.rank != null && a.rank !== b.rank) {
-      // a 为先出牌，b 为应答牌
-      if (b.rank > a.rank) {
-        const dim = {
-          metal: '金属活动性', acid: '酸性', base: '碱性',
-          nonmetal: '氧化性', hydrocarbon: '碳原子数', alcohol: '碳原子数'
-        }[a.ctype] || '强度';
-        return {
-          name: '同类比较', kind: 'compare', multiplier: 1.0,
-          eq: `${b.name} > ${a.name}`,
-          expl: `同类比较（${dim}）：${b.name}强于${a.name}`
-        };
-      }
-      return { invalid: true, expl: `${b.name}的强度不及${a.name}，同类比较无法压制` };
-    }
   }
 ];
 
@@ -244,6 +296,14 @@ const GENERIC_RULES = [
  * 判定应答牌 resp 能否接住先出牌 lead
  * @returns {{valid:boolean, name?:string, eq?:string, expl:string, multiplier?:number, kind?:string}}
  */
+// 离子相互作用类型展示名
+const ION_KIND_NAMES = {
+  precipitate: '离子反应·生成沉淀',
+  gas: '离子反应·生成气体',
+  water: '离子反应·生成水/弱电解质',
+  redox: '离子氧化还原'
+};
+
 export function matchCards(lead, resp) {
   const key = pairKey(lead.id, resp.id);
 
@@ -253,7 +313,19 @@ export function matchCards(lead, resp) {
     return { valid: true, name: db.name, eq: db.eq, expl: db.expl, multiplier: 2, kind: 'specific' };
   }
 
-  // ②③ 通用规律（注意：先出牌为 lead，应答牌为 resp，比较规则有方向性）
+  // ② 离子专属判定：双方均为离子卡时走离子相互作用体系（与物质卡体系互不通用）
+  if (lead.ctype === 'ion' && resp.ctype === 'ion') {
+    if (lead.ionKind === resp.ionKind) {
+      return { valid: false, expl: `${lead.name}与${resp.name}同为${lead.ionKind === 'cation' ? '阳' : '阴'}离子，相互排斥，可大量共存，不发生反应` };
+    }
+    const it = ION_INTERACTIONS[key];
+    if (it) {
+      return { valid: true, name: ION_KIND_NAMES[it.kind], eq: it.eq, expl: it.expl, multiplier: 2, kind: 'specific' };
+    }
+    return { valid: false, expl: `${lead.name}与${resp.name}混合：无沉淀、气体或弱电解质生成，可大量共存，不反应` };
+  }
+
+  // ③ 通用规律
   for (const rule of GENERIC_RULES) {
     const r = rule(lead, resp);
     if (r) {
@@ -265,10 +337,19 @@ export function matchCards(lead, resp) {
   // ④ 失败：易错点解析优先
   const trap = TRAPS[key];
   if (trap) return { valid: false, expl: trap };
-  return { valid: false, expl: `${resp.name}与${lead.name}之间没有典型的化学反应或性质压制关系` };
+  return { valid: false, expl: `${resp.name}与${lead.name}之间没有典型的化学反应关系` };
 }
 
 /** 筛出手牌中所有能接住 lead 的牌（供 AI 与提示高亮使用） */
 export function validResponses(hand, lead) {
   return hand.filter(card => matchCards(lead, card).valid);
+}
+
+/**
+ * 组合技判定：给定一组卡牌（通常为赢家剩余手牌 + 刚打出的应答牌），
+ * 若集齐某组合的全部离子，返回该组合定义，否则返回 null
+ */
+export function findCombo(cards) {
+  const ids = new Set(cards.map(c => c.id));
+  return ION_COMBOS.find(cb => cb.ions.every(id => ids.has(id))) || null;
 }
