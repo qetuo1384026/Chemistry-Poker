@@ -9,15 +9,33 @@ const screens = {
   end: $('#screen-end')
 };
 
+let board = null; // 当前对局控制器（用于销毁旧局的 AI 定时器）
+
 function show(name) {
   for (const key of Object.keys(screens)) {
     screens[key].hidden = key !== name;
   }
 }
 
+// 清空上一局的结算与知识点回顾，避免新一局残留旧内容
+function resetEndScreen() {
+  $('#end-title').textContent = '';
+  $('#end-score').textContent = '';
+  $('#recap-list').innerHTML = '';
+}
+
+function destroyBoard() {
+  if (board) {
+    board.destroy();
+    board = null;
+  }
+}
+
 function startGame(config) {
+  destroyBoard();
+  resetEndScreen();
   show('board');
-  startBoard(screens.board, config, { onEnd: showEnd });
+  board = startBoard(screens.board, config, { onEnd: showEnd });
 }
 
 function showEnd(game) {
@@ -48,9 +66,13 @@ function showEnd(game) {
   show('end');
 }
 
+// 再来一局：先销毁旧对局并清空结算内容，再回到选择界面
 $('#btn-restart').addEventListener('click', () => {
+  destroyBoard();
+  resetEndScreen();
   show('setup');
 });
 
 renderSetup(screens.setup, { onStart: startGame });
+resetEndScreen();
 show('setup');

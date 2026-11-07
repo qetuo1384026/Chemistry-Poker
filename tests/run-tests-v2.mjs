@@ -1,6 +1,6 @@
 // v2.0 系统性测试：复现已知 Bug + 异常/边界场景
 // 运行: node tests/run-tests-v2.mjs
-import { ALL_CARDS } from '../js/data/index.js';
+import { ALL_CARDS, MODULES, cardsByTopics } from '../js/data/index.js';
 import { matchCards, validResponses, findCombo } from '../js/core/rules.js';
 import { Game, PHASE } from '../js/core/game.js';
 
@@ -225,6 +225,84 @@ t('组合技不触发：未集齐时按普通计分', () => {
   assert(e.success);
   eq(e.match.combo, undefined);
   eq(e.points.total, Math.round((3 + 3) * 2), '无组合加成');
+});
+
+console.log('— 模式重构（v2.1：化学物质模式 / 离子模式）—');
+const topicsOf = moduleIds => MODULES
+  .filter(m => moduleIds.includes(m.id))
+  .flatMap(m => m.topics.map(t => t.id));
+
+t('离子模式卡组只包含离子卡', () => {
+  const cards = cardsByTopics(topicsOf(['ion']));
+  assert(cards.length >= 20, `离子卡数量应充足，实际 ${cards.length}`);
+  assert(cards.every(c => c.ctype === 'ion' && c.module === 'ion'), '离子模式不应混入物质卡');
+});
+t('化学物质模式卡组不含任何离子卡', () => {
+  const cards = cardsByTopics(topicsOf(['inorganic', 'organic']));
+  assert(cards.length >= 50, `物质卡数量应充足，实际 ${cards.length}`);
+  assert(cards.every(c => c.ctype !== 'ion'), '物质模式不应混入离子卡');
+});
+t('离子卡与物质卡双向均判定不通用', () => {
+  const a = matchCards(byId('ion-h'), byId('naoh'));
+  const b = matchCards(byId('naoh'), byId('ion-h'));
+  assert(!a.valid && !b.valid, '跨模式卡牌不应落入任何反应规则');
+});
+t('纯离子卡组可完整对局且无崩溃', () => {
+  const cards = cardsByTopics(topicsOf(['ion']));
+  const g = new Game(cards, { handSize: 6, rng: identityRng });
+  let guard = 0;
+  while (!g.isOver && guard++ < 100) {
+    if (g.phase === PHASE.LEAD) {
+      const pid = g.leader;
+      const card = pid === 'ai' ? g.aiLead() : g.players.player.hand[0];
+      if (!card) break;
+      g.playLead(pid, card.id);
+    } else {
+      const pid = g.defender;
+      const ok = validResponses(g.players[pid].hand, g.currentLead.card);
+      g.playResponse(pid, ok.length ? ok[0].id : null);
+    }
+  }
+  assert(g.isOver, '纯离子对局应正常结束');
+  assert(g.result, '纯离子对局应产出结算结果');
+});
+
+console.log('— 再来一局：状态隔离（v2.1）—');
+t('新一局不继承上一局的分数、日志与回合数', () => {
+  const deck = [byId('hcl'), byId('fe'), byId('naoh'), byId('cu')];
+  const g1 = new Game(deck, { handSize: 2, rng: identityRng });
+  g1.playLead('player', 'hcl');
+  g1.playResponse('ai', 'naoh'); // 中和反应，AI 赢得该回合
+  assert(g1.players.ai.score > 0, '上一局应已产生得分');
+  assert(g1.log.length > 0, '上一局应已有对局日志');
+
+  const g2 = new Game(ALL_CARDS, { handSize: 6, rng: identityRng });
+  eq(g2.players.player.score, 0, '新局玩家分数应清零');
+  eq(g2.players.ai.score, 0, '新局 AI 分数应清零');
+  eq(g2.log.length, 0, '新局日志应为空');
+  eq(g2.round, 1, '新局回合数应重置为 1');
+  eq(g2.phase, PHASE.LEAD, '新局应回到出牌阶段');
+  assert(g2.currentLead === null, '新局不应残留上一局的先出牌');
+});
+t('连续两局均可完整对局（模拟再来一局）', () => {
+  for (let i = 0; i < 2; i++) {
+    const g = new Game(ALL_CARDS, { handSize: 5, rng: seqRng([0.4, 0.8, 0.6]) });
+    let guard = 0;
+    while (!g.isOver && guard++ < 100) {
+      if (g.phase === PHASE.LEAD) {
+        const pid = g.leader;
+        const card = pid === 'ai' ? g.aiLead() : g.players.player.hand[0];
+        if (!card) break;
+        g.playLead(pid, card.id);
+      } else {
+        const pid = g.defender;
+        const ok = validResponses(g.players[pid].hand, g.currentLead.card);
+        g.playResponse(pid, ok.length ? ok[0].id : null);
+      }
+    }
+    assert(g.isOver, `第 ${i + 1} 局应正常结束`);
+    assert(g.result, `第 ${i + 1} 局应有结算结果`);
+  }
 });
 
 console.log(`\n结果：${passed} 通过，${failed} 失败`);
