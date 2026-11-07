@@ -18,14 +18,37 @@
 npm start
 ```
 
-3. 终端出现 `化学扑克已启动: http://localhost:8080` 后，在浏览器访问：
+3. 终端出现 `化学扑克已启动` 后，在浏览器访问（两种方式等价）：
 
 ```
-http://localhost:8080
+http://localhost:8080        （IP:端口，始终可用）
+http://www.chemistry-poker.cn （自定义域名，需按下文配置 hosts）
 ```
 
 4. 在首页依次选择「对战模式」→ 勾选「知识范围」→ 设置手牌数与难度 → 点击「开始对战」即可游玩。
 5. 结束游玩时回到终端按 `Ctrl + C` 停止服务。
+
+### 使用自定义域名访问（可选，推荐一次配置）
+
+服务器同时监听 `80`（供域名直接使用）与 `8080`（IP 备用）两个端口，互不冲突；某端口被占用时自动跳过并保留另一端口。
+
+1. 以管理员身份打开 PowerShell，追加 hosts 映射（仅首次需要）：
+
+```powershell
+Add-Content 'C:\Windows\System32\drivers\etc\hosts' "`r`n127.0.0.1 chemistry-poker.cn`r`n127.0.0.1 www.chemistry-poker.cn" -Encoding ASCII
+```
+
+macOS / Linux 对应文件为 `/etc/hosts`：
+
+```bash
+echo "127.0.0.1 chemistry-poker.cn" | sudo tee -a /etc/hosts
+echo "127.0.0.1 www.chemistry-poker.cn" | sudo tee -a /etc/hosts
+```
+
+2. `npm start` 启动后，浏览器直接访问 `http://www.chemistry-poker.cn` 即可，所有静态资源均为相对路径，无需其他改动。
+3. 不想占用 80 端口时，可只运行 `npm run start:ip`（仅 8080），再用 `http://www.chemistry-poker.cn:8080` 访问。
+4. 域名可通过环境变量更换：`CHEMISTRY_POKER_DOMAIN=my.game.cn npm start`（Windows PowerShell 用 `$env:CHEMISTRY_POKER_DOMAIN='my.game.cn'; npm start`），hosts 映射同步改为新域名即可。
+5. 移除方式：删除 hosts 中 `# Chemistry Poker (local dev)` 标记的对应行。
 
 ### 方式二：使用其他静态服务器
 
@@ -42,14 +65,14 @@ python -m http.server 8080
 
 ### 端口被占用怎么办
 
-内置服务器固定监听 8080。若提示端口被占用（`EADDRINUSE`），可先释放端口：
+内置服务器默认监听 `80` 与 `8080` 两个端口，单个端口被占用时会自动跳过并继续提供另一端口。两个端口都被占用时才需要处理：
 
 ```powershell
-# Windows：查找并结束占用 8080 的进程
-Get-NetTCPConnection -LocalPort 8080 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
+# Windows：查找并结束占用端口的进程
+Get-NetTCPConnection -LocalPort 80,8080 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
 ```
 
-或把 `server.js` 末尾的 `listen(8080, ...)` 与提示文字改为其他端口（如 8090）后重新 `npm start`。
+也可以用 `node server.js --port=8090` 指定任意单端口启动（对应 `npm run start:ip` 为仅 8080）。
 
 ### 运行测试
 
@@ -95,7 +118,7 @@ js/core/rules.js    匹配规则引擎（含离子判定与组合技检测）
 js/core/scoring.js  计分规则
 js/data/            无机 / 有机 / 离子卡牌与反应数据
 tests/              Node 断言测试
-server.js           本地静态服务器（端口 8080）
+server.js           本地静态服务器（默认监听 80 与 8080，支持 --port 与自定义域名）
 ```
 
 ## 版本与更新记录规范
@@ -105,6 +128,15 @@ server.js           本地静态服务器（端口 8080）
 3. 记录需按 **新增 / 修复 / 优化** 分类列出具体条目，避免含糊描述，便于回溯与验收。
 
 ## 更新记录
+
+### v2.6.1
+
+**新增**
+- 本地开发支持自定义域名访问：hosts 将 `www.chemistry-poker.cn` / `chemistry-poker.cn` 映射到 `127.0.0.1` 后，`npm start` 可直接以 `http://www.chemistry-poker.cn` 打开项目。
+
+**优化**
+- `server.js` 默认同时监听 `80`（域名免端口）与 `8080`（IP 备用）两个端口，某端口被占用时自动跳过并保留可用端口；新增 `--port=<端口>` 单端口模式与 `npm run start:ip` 快捷命令。
+- 域名可通过 `CHEMISTRY_POKER_DOMAIN` 环境变量更换；README 补充 hosts 配置、移除与故障处理说明。
 
 ### v2.6.0
 
