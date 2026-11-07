@@ -1,7 +1,7 @@
 {
   "name": "chemistry-poker",
-  "version": "2.0.0",
-  "description": "基于人教版高中化学知识体系的扑克对战游戏（无机化学 + 有机化学 + 离子反应）",
+  "version": "2.1.0",
+  "description": "基于人教版高中化学知识体系的扑克对战游戏（化学物质模式 + 离子模式）",
   "type": "module",
   "scripts": {
     "start": "node server.js",

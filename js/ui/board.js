@@ -6,12 +6,21 @@ import { topicName } from '../data/index.js';
 
 const AI_THINK_MS = 800;
 const MODULE_LABEL = { inorganic: '无机', organic: '有机', ion: '离子' };
+const MODE_LABEL = { substance: '化学物质模式', ion: '离子模式' };
 
 export function startBoard(root, config, { onEnd }) {
   const game = new Game(config.cards, {
     handSize: config.handSize,
     difficulty: config.difficulty
   });
+
+  // 对局生命周期控制：结束只回调一次，销毁时清理挂起的 AI 定时器，
+  // 避免旧对局的延迟回调污染新一局的界面状态
+  let aiTimer = null;
+  let finished = false;
+  const clearAiTimer = () => {
+    if (aiTimer !== null) { clearTimeout(aiTimer); aiTimer = null; }
+  };
 
   const $ = sel => root.querySelector(sel);
   const elScoreP = $('#score-player');
@@ -92,7 +101,7 @@ export function startBoard(root, config, { onEnd }) {
     const total = config.handSize;
     elRound.textContent = game.isOver
       ? '对局结束'
-      : `回合 ${game.round} / ${total}　·　先手：${game.leader === 'player' ? '你' : 'AI'}`;
+      : `回合 ${game.round} / ${total}　·　${MODE_LABEL[config.mode] || ''}　·　先手：${game.leader === 'player' ? '你' : 'AI'}`;
   }
 
   function renderTrick() {
@@ -154,15 +163,18 @@ export function startBoard(root, config, { onEnd }) {
 
   // ---- 流程控制 ----
   function playerLead(cardId) {
-    if (game.phase !== PHASE.LEAD || game.leader !== 'player') return;
+    if (finished || game.phase !== PHASE.LEAD || game.leader !== 'player') return;
     game.playLead('player', cardId);
     lastEntry = null;
     renderAll();
     hint('AI 思考应答中…');
-    setTimeout(aiRespondTurn, AI_THINK_MS);
+    clearAiTimer();
+    aiTimer = setTimeout(aiRespondTurn, AI_THINK_MS);
   }
 
   function aiRespondTurn() {
+    aiTimer = null;
+    if (finished) return;
     if (game.isOver) return finish();
     const pick = game.aiRespond(); // 可能为 null（AI 空手牌/放弃）
     lastEntry = game.playResponse('ai', pick);
@@ -171,7 +183,7 @@ export function startBoard(root, config, { onEnd }) {
   }
 
   function playerRespond(cardId) {
-    if (game.phase !== PHASE.RESPOND || game.defender !== 'player') return;
+    if (finished || game.phase !== PHASE.RESPOND || game.defender !== 'player') return;
     const lead = game.currentLead.card;
     if (cardId) {
       const card = game.players.player.hand.find(c => c.id === cardId);
@@ -187,9 +199,13 @@ export function startBoard(root, config, { onEnd }) {
   }
 
   function aiLeadTurn() {
+    if (finished) return;
     if (game.isOver) return finish();
     hint('AI 先手出牌中…');
-    setTimeout(() => {
+    clearAiTimer();
+    aiTimer = setTimeout(() => {
+      aiTimer = null;
+      if (finished) return;
       const card = game.aiLead();
       if (!card) return finish(); // AI 无牌可出，对局结束
       game.playLead('ai', card.id);
@@ -200,6 +216,7 @@ export function startBoard(root, config, { onEnd }) {
   }
 
   function nextAfterRound() {
+    if (finished) return;
     if (game.isOver) return finish();
     if (game.leader === 'ai') {
       aiLeadTurn();
@@ -210,6 +227,9 @@ export function startBoard(root, config, { onEnd }) {
   }
 
   function finish() {
+    if (finished) return;
+    finished = true;
+    clearAiTimer();
     renderAll();
     onEnd(game);
   }
@@ -221,4 +241,12 @@ export function startBoard(root, config, { onEnd }) {
   } else {
     hint('对局开始！轮到你先出牌');
   }
+
+  return {
+    // 离开对局时调用：停止后续 AI 回合，防止旧对局继续写同一套 DOM
+    destroy() {
+      finished = true;
+      clearAiTimer();
+    }
+  };
 }
