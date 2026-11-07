@@ -152,7 +152,47 @@ const PAIRS = [
   E('c2h4', 'h2', '加成反应', 'CH₂=CH₂ + H₂ =Ni/△= C₂H₆', '碳碳双键催化加氢'),
   E('c2h2', 'h2', '加成反应', 'CH≡CH + H₂ =Ni/△= CH₂=CH₂', '控制条件可使乙炔加氢停留在乙烯'),
   E('ethanal', 'h2', '醛的还原', 'CH₃CHO + H₂ =Ni/△= C₂H₅OH', '醛基加氢还原为伯醇，属于加成反应'),
-  E('cuoh2', 'formic', '醛基检验', 'HCOOH + 2Cu(OH)₂ =△= Cu₂O↓ + CO₂ + 3H₂O', '甲酸含醛基，加热生成砖红色沉淀')
+  E('cuoh2', 'formic', '醛基检验', 'HCOOH + 2Cu(OH)₂ =△= Cu₂O↓ + CO₂ + 3H₂O', '甲酸含醛基，加热生成砖红色沉淀'),
+
+  // ===== v2.3 扩充：无机 =====
+  E('hcl', 'koh', '酸碱中和', 'HCl + KOH = KCl + H₂O', '强酸强碱中和，实质是 H⁺ + OH⁻ = H₂O'),
+  E('h2so4', 'koh', '酸碱中和', 'H₂SO₄ + 2KOH = K₂SO₄ + 2H₂O', '强酸强碱中和，注意配平'),
+  E('co2', 'koh', '酸性氧化物与碱', 'CO₂ + 2KOH = K₂CO₃ + H₂O', '碱溶液吸收CO₂，与NaOH吸收原理相同'),
+  E('aloh3', 'koh', '两性氢氧化物', 'Al(OH)₃ + KOH = KAlO₂ + 2H₂O', 'Al(OH)₃显酸性，可溶于强碱溶液'),
+  E('hbr', 'naoh', '酸碱中和', 'HBr + NaOH = NaBr + H₂O', '强酸强碱中和'),
+  E('agno3', 'hbr', '溴离子检验', 'AgNO₃ + HBr = AgBr↓ + HNO₃', '淡黄色AgBr沉淀——检验Br⁻'),
+  E('cl2', 'hbr', '氧化还原', 'Cl₂ + 2HBr = Br₂ + 2HCl', 'Cl₂氧化性强于Br₂，可置换出溴单质'),
+  E('mgo', 'h2so4', '碱性氧化物与酸', 'MgO + H₂SO₄ = MgSO₄ + H₂O', '碱性氧化物与酸反应生成盐和水'),
+  E('hcl', 'mgo', '碱性氧化物与酸', 'MgO + 2HCl = MgCl₂ + H₂O', '碱性氧化物与酸反应生成盐和水'),
+  E('naoh', 'so3', '酸性氧化物与碱', 'SO₃ + 2NaOH = Na₂SO₃ + H₂O', 'SO₃是硫的+6价酸性氧化物'),
+  E('caoh2', 'so3', '酸性氧化物与碱', 'SO₃ + Ca(OH)₂ = CaSO₄ + H₂O', '生成硫酸钙，可用于吸收SO₃'),
+  E('fe3o4', 'hcl', '复杂氧化物与酸', 'Fe₃O₄ + 8HCl = FeCl₂ + 2FeCl₃ + 4H₂O', 'Fe₃O₄中同时含+2价和+3价铁'),
+  E('fe3o4', 'h2', '金属氧化物的还原', 'Fe₃O₄ + 4H₂ =高温= 3Fe + 4H₂O', 'H₂还原四氧化三铁得到铁'),
+  E('alcl3', 'naoh', '复分解反应', 'AlCl₃ + 3NaOH = Al(OH)₃↓ + 3NaCl', '白色胶状沉淀，NaOH过量时沉淀溶解'),
+  E('agno3', 'alcl3', '氯离子检验', '3AgNO₃ + AlCl₃ = 3AgCl↓ + Al(NO₃)₃', '白色AgCl沉淀，不溶于稀硝酸'),
+  E('feso4', 'naoh', '复分解反应', 'FeSO₄ + 2NaOH = Fe(OH)₂↓ + Na₂SO₄', '白色絮状沉淀，迅速变灰绿色、最终红褐色'),
+  E('feso4', 'zn', '金属置换', 'Zn + FeSO₄ = ZnSO₄ + Fe', 'Zn比Fe活泼，可置换出铁'),
+  E('cl2', 'feso4', '氧化还原', '6FeSO₄ + 3Cl₂ = 2Fe₂(SO₄)₃ + 2FeCl₃', 'Fe²⁺被Cl₂氧化为Fe³⁺，溶液由浅绿变黄'),
+  E('hcl', 'kclo3', '氯酸钾制氯气', 'KClO₃ + 6HCl = KCl + 3Cl₂↑ + 3H₂O', '利用KClO₃的强氧化性制取氯气'),
+  E('o2', 'p4', '磷的燃烧', '4P + 5O₂ =点燃= 2P₂O₅', '产生大量白烟；白磷着火点低，需保存在水中'),
+  E('cl2', 'p4', '磷与氯气', '2P + 5Cl₂ =点燃= 2PCl₅', '剧烈燃烧生成白色固体，产生白烟'),
+  E('cus', 'o2', '硫化铜焙烧', '2CuS + 3O₂ =高温= 2CuO + 2SO₂', '工业炼铜的重要步骤，注意SO₂尾气处理'),
+
+  // ===== v2.3 扩充：有机 =====
+  E('c3h8', 'cl2', '取代反应', 'C₃H₈ + Cl₂ =光照= C₃H₇Cl + HCl', '烷烃光照下发生取代，产物为多种氯代物的混合物'),
+  E('c3h8', 'o2', '燃烧反应', 'C₃H₈ + 5O₂ =点燃= 3CO₂ + 4H₂O', '气态烃完全燃烧，火焰明亮'),
+  E('ch3cl', 'naoh', '卤代烃水解', 'CH₃Cl + NaOH =H₂O/△= CH₃OH + NaCl', 'NaOH水溶液中发生取代反应生成甲醇'),
+  E('methanol', 'o2', '催化氧化', '2CH₃OH + O₂ =Cu/△= 2HCHO + 2H₂O', '甲醇在Cu催化下氧化为甲醛'),
+  E('methanol', 'na', '醇羟基与钠', '2CH₃OH + 2Na → 2CH₃ONa + H₂↑', '羟基氢被置换，反应比钠与水缓和'),
+  E('glycerol', 'hno3', '酯化反应', 'C₃H₅(OH)₃ + 3HNO₃ =浓硫酸/△= C₃H₅(ONO₂)₃ + 3H₂O', '生成硝化甘油——多元醇的酯化反应'),
+  E('cuoh2', 'glycerol', '多元醇检验', '甘油 + Cu(OH)₂ → 绛蓝色甘油铜', '甘油与新制Cu(OH)₂生成绛蓝色溶液——检验多元醇'),
+  E('benzoic', 'naoh', '酸碱中和', 'C₆H₅COOH + NaOH = C₆H₅COONa + H₂O', '苯甲酸是弱酸，与强碱中和'),
+  E('benzoic', 'na2co3', '酸性强弱比较', '2C₆H₅COOH + Na₂CO₃ = 2C₆H₅COONa + H₂O + CO₂↑', '苯甲酸酸性强于碳酸，可使碳酸盐放出CO₂'),
+  E('benzoic', 'ethanol', '酯化反应', 'C₆H₅COOH + C₂H₅OH ⇌ C₆H₅COOC₂H₅ + H₂O', '浓硫酸催化加热制苯甲酸乙酯，可逆反应'),
+  E('methylacetate', 'naoh', '酯的水解', 'CH₃COOCH₃ + NaOH =△= CH₃COONa + CH₃OH', '碱性条件下酯水解较彻底'),
+  E('fructose', 'tollens', '银镜反应', '果糖 + 2[Ag(NH₃)₂]OH =△= ... + 2Ag↓', '果糖是还原糖，在碱性条件下异构化后发生银镜反应'),
+  E('cuoh2', 'fructose', '还原糖检验', '果糖 + 2Cu(OH)₂ =△= ... + Cu₂O↓', '砖红色沉淀——检验还原糖'),
+  E('h2so4', 'cellulose', '脱水炭化', '纤维素 --浓H₂SO₄--> 碳 + H₂O（脱水炭化）', '浓硫酸使纸张（纤维素）脱水变黑，体现脱水性')
 ];
 
 export const EQUATIONS = {};
@@ -181,7 +221,10 @@ const TRAP_PAIRS = [
   T('h2co3', 'nacl', '碳酸是弱酸，不能与NaCl反应——弱酸不能制强酸'),
   T('fecl2', 'i2', 'I₂的氧化性弱于Fe³⁺，不能把Fe²⁺氧化为Fe³⁺（逆反应2FeCl₃+2KI却可以）'),
   T('hcl', 'h2so4', '盐酸与硫酸都是酸，二者不发生化学反应'),
-  T('nacl', 'na2co3', '两者都是可溶性钠盐，混合后无沉淀、气体或水生成，不满足复分解反应条件')
+  T('nacl', 'na2co3', '两者都是可溶性钠盐，混合后无沉淀、气体或水生成，不满足复分解反应条件'),
+  T('cus', 'hcl', 'CuS是极难溶的黑色沉淀，不溶于稀盐酸（不能用盐酸溶解CuS）'),
+  T('benzoic', 'tollens', '苯甲酸分子中没有醛基，不能发生银镜反应'),
+  T('br2water', 'fructose', '果糖是多羟基酮，溴水只氧化醛糖，不能使果糖氧化褪色（可用银氨溶液或新制Cu(OH)₂检验）')
 ];
 export const TRAPS = {};
 for (const [a, b, expl] of TRAP_PAIRS) {
@@ -315,12 +358,13 @@ export function matchCards(lead, resp) {
 
   // ② 离子专属判定：双方均为离子卡时走离子相互作用体系（与物质卡体系互不通用）
   if (lead.ctype === 'ion' && resp.ctype === 'ion') {
-    if (lead.ionKind === resp.ionKind) {
-      return { valid: false, expl: `${lead.name}与${resp.name}同为${lead.ionKind === 'cation' ? '阳' : '阴'}离子，相互排斥，可大量共存，不发生反应` };
-    }
+    // 显式登记的作用优先（含 HCO₃⁻ + OH⁻ 这类同号但能发生酸碱反应的例外）
     const it = ION_INTERACTIONS[key];
     if (it) {
       return { valid: true, name: ION_KIND_NAMES[it.kind], eq: it.eq, expl: it.expl, multiplier: 2, kind: 'specific' };
+    }
+    if (lead.ionKind === resp.ionKind) {
+      return { valid: false, expl: `${lead.name}与${resp.name}同为${lead.ionKind === 'cation' ? '阳' : '阴'}离子，相互排斥，可大量共存，不发生反应` };
     }
     return { valid: false, expl: `${lead.name}与${resp.name}混合：无沉淀、气体或弱电解质生成，可大量共存，不反应` };
   }

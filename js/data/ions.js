@@ -43,7 +43,18 @@ export const ION_CARDS = [
   c('ion-br',   '溴离子',       'Br⁻',    'ion-reaction', 2, { charge: -1, ionKind: 'anion', tags: ['生成沉淀'] }),
   c('ion-i',    '碘离子',       'I⁻',     'ion-redox',    3, { charge: -1, ionKind: 'anion', tags: ['还原剂', '生成沉淀'] }),
   c('ion-clo',  '次氯酸根离子', 'ClO⁻',   'ion-redox',    3, { charge: -1, ionKind: 'anion', tags: ['氧化剂', '弱酸根'] }),
-  c('ion-mno4', '高锰酸根离子', 'MnO₄⁻',  'ion-redox',    4, { charge: -1, ionKind: 'anion', tags: ['氧化剂', '紫色'] })
+  c('ion-mno4', '高锰酸根离子', 'MnO₄⁻',  'ion-redox',    4, { charge: -1, ionKind: 'anion', tags: ['氧化剂', '紫色'] }),
+
+  // ---- v2.3 扩充：更多阳离子 ----
+  c('ion-zn',   '锌离子',       'Zn²⁺',   'ion-reaction', 2, { charge: +2, ionKind: 'cation', tags: ['生成沉淀', '两性'] }),
+  c('ion-mn',   '锰离子',       'Mn²⁺',   'ion-reaction', 2, { charge: +2, ionKind: 'cation', tags: ['生成沉淀', '还原剂'] }),
+
+  // ---- v2.3 扩充：更多阴离子 ----
+  c('ion-f',    '氟离子',       'F⁻',     'ion-reaction', 2, { charge: -1, ionKind: 'anion', tags: ['生成沉淀'] }),
+  c('ion-so3',  '亚硫酸根离子', 'SO₃²⁻',  'ion-reaction', 2, { charge: -2, ionKind: 'anion', tags: ['生成沉淀', '生成气体', '还原剂'] }),
+  c('ion-sio3', '硅酸根离子',   'SiO₃²⁻', 'ion-reaction', 2, { charge: -2, ionKind: 'anion', tags: ['生成沉淀'] }),
+  c('ion-po4',  '磷酸根离子',   'PO₄³⁻',  'ion-reaction', 2, { charge: -3, ionKind: 'anion', tags: ['生成沉淀'] }),
+  c('ion-ac',   '醋酸根离子',   'CH₃COO⁻', 'ion-reaction', 1, { charge: -1, ionKind: 'anion', tags: ['弱酸根', '生成弱电解质'] })
 ];
 
 // ---- 离子相互作用判定表 ----
@@ -84,7 +95,29 @@ const ION_PAIRS = [
   I('ion-mno4', 'ion-i', 'redox', '2MnO₄⁻ + 10I⁻ + 16H⁺ = 2Mn²⁺ + 5I₂ + 8H₂O', 'I⁻被氧化为I₂，紫色褪去'),
   I('ion-clo', 'ion-i', 'redox', 'ClO⁻ + 2I⁻ + H₂O = Cl⁻ + I₂ + 2OH⁻', 'ClO⁻把I⁻氧化为I₂'),
   I('ion-clo', 'ion-fe2', 'redox', 'ClO⁻ + 2Fe²⁺ + 2H⁺ = Cl⁻ + 2Fe³⁺ + H₂O', 'ClO⁻把Fe²⁺氧化为Fe³⁺'),
-  I('ion-mno4', 'ion-s2', 'redox', '2MnO₄⁻ + 5S²⁻ + 16H⁺ = 2Mn²⁺ + 5S↓ + 8H₂O', 'S²⁻被氧化为淡黄色的硫单质')
+  I('ion-mno4', 'ion-s2', 'redox', '2MnO₄⁻ + 5S²⁻ + 16H⁺ = 2Mn²⁺ + 5S↓ + 8H₂O', 'S²⁻被氧化为淡黄色的硫单质'),
+
+  // ===== v2.3 扩充：Zn²⁺ / Mn²⁺ 与常见阴离子 =====
+  I('ion-zn', 'ion-oh', 'precipitate', 'Zn²⁺ + 2OH⁻ = Zn(OH)₂↓', '白色沉淀，NaOH过量时溶解为[Zn(OH)₄]²⁻——氢氧化锌具有两性'),
+  I('ion-zn', 'ion-co3', 'precipitate', 'Zn²⁺ + CO₃²⁻ = ZnCO₃↓', '白色沉淀，可溶于稀酸'),
+  I('ion-zn', 'ion-s2', 'precipitate', 'Zn²⁺ + S²⁻ = ZnS↓', '白色沉淀，可溶于稀盐酸'),
+  I('ion-mn', 'ion-oh', 'precipitate', 'Mn²⁺ + 2OH⁻ = Mn(OH)₂↓', '白色沉淀，迅速被空气氧化为棕褐色的MnO(OH)₂'),
+  I('ion-mn', 'ion-s2', 'precipitate', 'Mn²⁺ + S²⁻ = MnS↓', '浅粉色沉淀，可溶于弱酸'),
+
+  // ===== v2.3 扩充：F⁻ / SO₃²⁻ / SiO₃²⁻ / PO₄³⁻ / CH₃COO⁻ =====
+  I('ion-ca', 'ion-f', 'precipitate', 'Ca²⁺ + 2F⁻ = CaF₂↓', '白色沉淀——萤石的主要成分'),
+  I('ion-mg', 'ion-f', 'precipitate', 'Mg²⁺ + 2F⁻ = MgF₂↓', '白色难溶沉淀'),
+  I('ion-ba', 'ion-so3', 'precipitate', 'Ba²⁺ + SO₃²⁻ = BaSO₃↓', '白色沉淀，可溶于稀盐酸并放出SO₂'),
+  I('ion-ca', 'ion-so3', 'precipitate', 'Ca²⁺ + SO₃²⁻ = CaSO₃↓', '白色沉淀'),
+  I('ion-h', 'ion-so3', 'gas', '2H⁺ + SO₃²⁻ = H₂O + SO₂↑', '放出有刺激性气味的二氧化硫，可使品红褪色'),
+  I('ion-clo', 'ion-so3', 'redox', 'ClO⁻ + SO₃²⁻ = Cl⁻ + SO₄²⁻', 'ClO⁻把SO₃²⁻氧化为SO₄²⁻'),
+  I('ion-mno4', 'ion-so3', 'redox', '2MnO₄⁻ + 5SO₃²⁻ + 6H⁺ = 2Mn²⁺ + 5SO₄²⁻ + 3H₂O', '酸性KMnO₄紫色褪去，SO₃²⁻体现还原性'),
+  I('ion-h', 'ion-sio3', 'precipitate', 'SiO₃²⁻ + 2H⁺ = H₂SiO₃↓', '白色胶状沉淀（硅酸），属弱电解质'),
+  I('ion-ca', 'ion-sio3', 'precipitate', 'Ca²⁺ + SiO₃²⁻ = CaSiO₃↓', '白色沉淀'),
+  I('ion-ag', 'ion-po4', 'precipitate', '3Ag⁺ + PO₄³⁻ = Ag₃PO₄↓', '黄色沉淀——检验PO₄³⁻'),
+  I('ion-ca', 'ion-po4', 'precipitate', '3Ca²⁺ + 2PO₄³⁻ = Ca₃(PO₄)₂↓', '白色沉淀'),
+  I('ion-ba', 'ion-po4', 'precipitate', '3Ba²⁺ + 2PO₄³⁻ = Ba₃(PO₄)₂↓', '白色沉淀'),
+  I('ion-h', 'ion-ac', 'water', 'H⁺ + CH₃COO⁻ = CH₃COOH', '生成弱电解质乙酸——强酸制弱酸')
 ];
 for (const [a, b, v] of ION_PAIRS) {
   ION_INTERACTIONS[[a, b].sort().join('+')] = v;
@@ -105,5 +138,9 @@ export const ION_COMBOS = [
   { id: 'combo-redox-fe', name: '铁的三态循环', ions: ['ion-fe2', 'ion-fe3', 'ion-oh'], bonus: 2,
     expl: 'Fe²⁺/Fe³⁺/OH⁻齐备：沉淀与氧化的完整演绎' },
   { id: 'combo-halide', name: '卤素检验链', ions: ['ion-ag', 'ion-cl', 'ion-br', 'ion-i'], bonus: 2,
-    expl: 'Ag⁺与三种卤素离子：白、淡黄、黄三色沉淀全收集' }
+    expl: 'Ag⁺与三种卤素离子：白、淡黄、黄三色沉淀全收集' },
+  { id: 'combo-sulfite', name: '亚硫酸还原链', ions: ['ion-so3', 'ion-h'], bonus: 1.5,
+    expl: 'H⁺与SO₃²⁻同时在手：SO₂气体的完整生成链' },
+  { id: 'combo-phosphate', name: '磷酸银黄沉', ions: ['ion-ag', 'ion-po4'], bonus: 1.5,
+    expl: 'Ag⁺与PO₄³⁻齐聚，黄色沉淀组合加成' }
 ];

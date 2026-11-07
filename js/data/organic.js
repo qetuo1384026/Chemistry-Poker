@@ -55,5 +55,15 @@ export const ORGANIC_CARDS = [
   c('br2water', '溴水',           'Br₂水溶液',     'org-reagent', 'reagent', 3, { tags: ['检验', '加成褪色'] }),
   c('kmno4',    '酸性高锰酸钾',   'KMnO₄/H⁺',      'org-reagent', 'reagent', 3, { tags: ['检验', '氧化剂'] }),
   c('tollens',  '银氨溶液',       '[Ag(NH₃)₂]OH',  'org-reagent', 'reagent', 4, { tags: ['检验', '银镜反应'] }),
-  c('cuoh2',    '新制氢氧化铜',   'Cu(OH)₂悬浊液', 'org-reagent', 'reagent', 4, { tags: ['检验', '砖红色沉淀'] })
+  c('cuoh2',    '新制氢氧化铜',   'Cu(OH)₂悬浊液', 'org-reagent', 'reagent', 4, { tags: ['检验', '砖红色沉淀'] }),
+
+  // ---- v2.3 扩充：烃 / 卤代烃 / 含氧衍生物 / 糖类 ----
+  c('c3h8',      '丙烷',     'CH₃CH₂CH₃',    'org-hydrocarbon', 'hydrocarbon', 2, { rank: 3, tags: ['烷烃', '取代反应'] }),
+  c('ch3cl',     '一氯甲烷', 'CH₃Cl',        'org-halo', 'halo', 2, { tags: ['卤代烃', '水解反应'] }),
+  c('methanol',  '甲醇',     'CH₃OH',        'org-oxygen', 'alcohol', 2, { rank: 1, tags: ['羟基', '有毒', '催化氧化'] }),
+  c('glycerol',  '丙三醇',   'C₃H₅(OH)₃',    'org-oxygen', 'alcohol', 3, { rank: 3, tags: ['多羟基', '酯化', '保湿'] }),
+  c('benzoic',   '苯甲酸',   'C₆H₅COOH',     'org-oxygen', 'acid', 3, { rank: 4, tags: ['羧酸', '弱酸', '防腐剂'] }),
+  c('methylacetate', '乙酸甲酯', 'CH₃COOCH₃', 'org-oxygen', 'ester', 2, { rank: 3, tags: ['酯', '水解'] }),
+  c('fructose',  '果糖',     'C₆H₁₂O₆',      'org-bio', 'bio', 3, { tags: ['还原糖', '单糖'] }),
+  c('cellulose', '纤维素',   '(C₆H₁₀O₅)ₙ',   'org-bio', 'bio', 2, { tags: ['多糖', '水解', '脱水'] })
 ];

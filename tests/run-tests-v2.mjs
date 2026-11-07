@@ -1,7 +1,8 @@
 // v2.0 系统性测试：复现已知 Bug + 异常/边界场景
 // 运行: node tests/run-tests-v2.mjs
 import { ALL_CARDS, MODULES, cardsByTopics } from '../js/data/index.js';
-import { matchCards, validResponses, findCombo } from '../js/core/rules.js';
+import { matchCards, validResponses, findCombo, EQUATIONS, TRAPS } from '../js/core/rules.js';
+import { ION_CARDS, ION_INTERACTIONS, ION_COMBOS } from '../js/data/ions.js';
 import { Game, PHASE } from '../js/core/game.js';
 
 let passed = 0, failed = 0;
@@ -333,6 +334,103 @@ t('连续两局均可完整对局（模拟再来一局）', () => {
     assert(g.isOver, `第 ${i + 1} 局应正常结束`);
     assert(g.result, `第 ${i + 1} 局应有结算结果`);
   }
+});
+
+console.log('— 内容扩充（v2.3：卡牌与反应库）—');
+const allIds = new Set(ALL_CARDS.map(c => c.id));
+const expectValid = (a, b, mult = 2) => {
+  const m = matchCards(byId(a), byId(b));
+  assert(m.valid, `${a} + ${b} 应判定有效：${JSON.stringify(m)}`);
+  eq(m.multiplier, mult, `${a}+${b} 倍率`);
+  return m;
+};
+
+t('卡牌 id 唯一且关键字段完整', () => {
+  eq(allIds.size, ALL_CARDS.length, '存在重复卡牌 id');
+  for (const c of ALL_CARDS) {
+    assert(c.id && c.name && c.sub && c.module && c.topic, `卡牌字段缺失：${JSON.stringify(c)}`);
+    assert(c.pt >= 1 && c.pt <= 5, `牌面点数越界：${c.id}=${c.pt}`);
+  }
+});
+t('方程式库所有引用均指向已存在卡牌', () => {
+  for (const key of Object.keys(EQUATIONS)) {
+    for (const id of key.split('+')) {
+      assert(allIds.has(id), `方程式引用了不存在的卡牌：${id}（键 ${key}）`);
+    }
+  }
+});
+t('离子作用表引用有效，同号仅限氧化还原/弱电解质例外', () => {
+  const ionMap = new Map(ION_CARDS.map(c => [c.id, c]));
+  let sameKind = 0;
+  for (const key of Object.keys(ION_INTERACTIONS)) {
+    const [a, b] = key.split('+');
+    const ca = ionMap.get(a), cb = ionMap.get(b);
+    assert(ca && cb, `离子作用表引用不存在离子：${key}`);
+    if (ca.ionKind === cb.ionKind) {
+      sameKind++;
+      const k = ION_INTERACTIONS[key].kind;
+      assert(k === 'redox' || k === 'water', `同号离子不应生成沉淀/气体：${key} (${k})`);
+    }
+  }
+  assert(sameKind >= 1, '应保留同号但可反应的例外（如 HCO₃⁻+OH⁻、I⁻+MnO₄⁻）');
+  const m = matchCards(byId('ion-hco3'), byId('ion-oh'));
+  assert(m.valid, 'HCO₃⁻ + OH⁻ 应可反应');
+});
+t('同号例外：HCO₃⁻ + OH⁻ 判定为生成水', () => {
+  const m = matchCards(byId('ion-hco3'), byId('ion-oh'));
+  assert(m.valid && m.name.includes('水'), `HCO₃⁻+OH⁻ 应生成水：${JSON.stringify(m)}`);
+});
+t('各模块卡牌数量充足', () => {
+  const inorg = cardsByTopics(topicsOf(['inorganic']));
+  const org = cardsByTopics(topicsOf(['organic']));
+  const ion = cardsByTopics(topicsOf(['ion']));
+  assert(inorg.length >= 50, `无机卡数量不足：${inorg.length}`);
+  assert(org.length >= 30, `有机卡数量不足：${org.length}`);
+  assert(ion.length >= 29, `离子卡数量不足：${ion.length}`);
+});
+t('新增无机反应抽样（含配平事实）', () => {
+  expectValid('koh', 'hcl');
+  expectValid('fe3o4', 'hcl');
+  expectValid('kclo3', 'hcl');
+  expectValid('p4', 'o2');
+  expectValid('feso4', 'zn');
+  expectValid('so3', 'naoh');
+});
+t('新增有机反应抽样', () => {
+  expectValid('glycerol', 'hno3');
+  expectValid('benzoic', 'ethanol');
+  expectValid('methylacetate', 'naoh');
+  expectValid('fructose', 'tollens');
+  expectValid('cellulose', 'h2so4');
+});
+t('新增离子相互作用抽样', () => {
+  assert(expectValid('ion-zn', 'ion-oh').name.includes('沉淀'), 'Zn²⁺+OH⁻ 应为沉淀');
+  assert(expectValid('ion-f', 'ion-ca').eq.includes('CaF₂'), 'Ca²⁺+F⁻ 应生成 CaF₂');
+  assert(expectValid('ion-h', 'ion-so3').name.includes('气体'), 'H⁺+SO₃²⁻ 应为气体');
+  assert(expectValid('ion-po4', 'ion-ag').eq.includes('Ag₃PO₄'), 'Ag⁺+PO₄³⁻ 应生成 Ag₃PO₄');
+  assert(expectValid('ion-ac', 'ion-h').name.includes('水'), 'H⁺+CH₃COO⁻ 应生成弱电解质');
+});
+t('AgF 可溶：Ag⁺ 与 F⁻ 应判为共存', () => {
+  const m = matchCards(byId('ion-ag'), byId('ion-f'));
+  assert(!m.valid && m.expl.includes('共存'), `AgF可溶，不应判定沉淀：${JSON.stringify(m)}`);
+});
+t('新增组合技已注册且可命中', () => {
+  eq(ION_COMBOS.length, 7, '组合技数量');
+  eq(findCombo([byId('ion-ag'), byId('ion-po4'), byId('ion-na')]).id, 'combo-phosphate');
+  eq(findCombo([byId('ion-h'), byId('ion-so3'), byId('ion-na')]).id, 'combo-sulfite');
+});
+t('新增卡牌可被对应模式加载', () => {
+  const inorg = cardsByTopics(topicsOf(['inorganic'])).map(c => c.id);
+  const org = cardsByTopics(topicsOf(['organic'])).map(c => c.id);
+  const ion = cardsByTopics(topicsOf(['ion'])).map(c => c.id);
+  for (const id of ['fe3o4', 'koh', 'kclo3', 'p4']) assert(inorg.includes(id), `无机模式缺少 ${id}`);
+  for (const id of ['glycerol', 'benzoic', 'fructose', 'cellulose']) assert(org.includes(id), `有机模式缺少 ${id}`);
+  for (const id of ['ion-zn', 'ion-f', 'ion-so3', 'ion-po4']) assert(ion.includes(id), `离子模式缺少 ${id}`);
+});
+t('易错组合解析：CuS 不溶于稀盐酸', () => {
+  const m = matchCards(byId('cus'), byId('hcl'));
+  assert(!m.valid && TRAPS['cus+hcl'], `应命中易错解析：${JSON.stringify(m)}`);
+  assert(m.expl.includes('不溶于稀盐酸'));
 });
 
 console.log(`\n结果：${passed} 通过，${failed} 失败`);

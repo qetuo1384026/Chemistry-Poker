@@ -78,5 +78,17 @@ export const INORGANIC_CARDS = [
   // ---- 化学反应原理 ----
   c('zn',     '锌',         'Zn',        'inorg-principle', 'metal', 3, { rank: 5, hBefore: true, tags: ['原电池'] }),
   c('nh4cl',  '氯化铵',     'NH₄Cl',     'inorg-principle', 'salt', 2, { tags: ['水解', '铵盐'] }),
-  c('h2co3',  '碳酸',       'H₂CO₃',     'inorg-principle', 'acid', 2, { rank: 2, tags: ['弱酸', '二元弱酸'] })
+  c('h2co3',  '碳酸',       'H₂CO₃',     'inorg-principle', 'acid', 2, { rank: 2, tags: ['弱酸', '二元弱酸'] }),
+
+  // ---- v2.3 扩充：金属及其化合物 / 非金属及其化合物 ----
+  c('fe3o4',  '四氧化三铁', 'Fe₃O₄',     'inorg-metal', 'oxide', 3, { rank: 6, tags: ['复杂氧化物', '磁性', '碱性氧化物'] }),
+  c('alcl3',  '氯化铝',     'AlCl₃',     'inorg-metal', 'salt',  3, { tags: ['铝盐', '水解'] }),
+  c('feso4',  '硫酸亚铁',   'FeSO₄',     'inorg-metal', 'salt',  2, { tags: ['亚铁盐', '还原剂'] }),
+  c('mgo',    '氧化镁',     'MgO',       'inorg-metal', 'oxide', 2, { tags: ['碱性氧化物', '耐火材料'] }),
+  c('koh',    '氢氧化钾',   'KOH',       'inorg-matter', 'base', 3, { rank: 9, tags: ['强碱'] }),
+  c('hbr',    '氢溴酸',     'HBr',       'inorg-nonmetal', 'acid', 3, { rank: 8, tags: ['强酸', '卤化氢'] }),
+  c('so3',    '三氧化硫',   'SO₃',       'inorg-nonmetal', 'oxide', 3, { tags: ['酸性氧化物'] }),
+  c('kclo3',  '氯酸钾',     'KClO₃',     'inorg-nonmetal', 'salt', 2, { tags: ['氧化剂', '实验室制氧气'] }),
+  c('p4',     '白磷',       'P₄',        'inorg-nonmetal', 'nonmetal', 2, { tags: ['易自燃', '还原剂'] }),
+  c('cus',    '硫化铜',     'CuS',       'inorg-matter', 'salt', 2, { tags: ['难溶', '黑色沉淀'] })
 ];
