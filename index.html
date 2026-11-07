@@ -8,6 +8,53 @@
 </head>
 <body>
   <div id="app">
+    <!-- 启动封面 -->
+    <section id="screen-cover" class="screen screen-cover">
+      <div class="cover-orb orb-a" aria-hidden="true"></div>
+      <div class="cover-orb orb-b" aria-hidden="true"></div>
+      <div class="cover-main">
+        <div class="cover-logo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img" aria-label="化学扑克标志">
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#4fc3f7"/>
+                <stop offset="1" stop-color="#ffd54f"/>
+              </linearGradient>
+            </defs>
+            <path d="M26 8h12v10l10 24a6 6 0 0 1-5.5 8.5H21.5A6 6 0 0 1 16 42l10-24V8"
+                  fill="none" stroke="url(#logoGrad)" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M20 34h24" stroke="url(#logoGrad)" stroke-width="2.5"/>
+            <circle cx="30" cy="44" r="2.2" fill="#4fc3f7"/>
+            <circle cx="36" cy="48" r="1.7" fill="#ffd54f"/>
+            <circle cx="34" cy="41" r="1.3" fill="#4fc3f7"/>
+          </svg>
+        </div>
+        <h2 class="cover-title">化学扑克</h2>
+        <p class="cover-subtitle">CHEMISTRY POKER</p>
+        <p class="cover-desc">人教版高中化学 · 知识对战卡牌</p>
+        <p class="cover-meta">
+          <span id="cover-version" class="version-badge">v2.4.0</span>
+          <span class="cover-dot">·</span>
+          <span>化学物质模式 × 离子模式</span>
+        </p>
+
+        <div id="cover-loading" class="cover-loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="cover-loading-text">正在加载卡牌数据…</span>
+        </div>
+
+        <div class="cover-actions">
+          <button id="btn-enter" class="btn btn-primary cover-main-btn" type="button" disabled>开始游戏</button>
+          <div class="cover-sub-actions">
+            <button id="btn-cover-settings" class="btn cover-ghost-btn" type="button" disabled>⚙ 设置</button>
+            <button id="btn-cover-about" class="btn cover-ghost-btn" type="button" disabled>ⓘ 关于</button>
+            <button id="btn-cover-help" class="btn cover-ghost-btn" type="button" disabled>? 帮助</button>
+          </div>
+        </div>
+        <p class="cover-foot">选择模式 → 勾选专题 → 开始对战</p>
+      </div>
+    </section>
+
     <header class="app-header">
       <h1>⚗ 化学扑克</h1>
       <p class="subtitle">人教版高中化学 · 化学物质模式 × 离子模式 · 知识对战卡牌</p>
@@ -16,6 +63,9 @@
 
     <!-- 模式与知识范围选择界面 -->
     <section id="screen-setup" class="screen">
+      <div class="setup-bar">
+        <button id="btn-back-cover" class="btn btn-ghost" type="button">← 返回封面</button>
+      </div>
       <div class="panel">
         <h2>① 选择对战模式</h2>
         <p class="hint">两个模式玩法相互独立：化学物质模式比拼物质间的反应；离子模式比拼离子相互作用与共存。</p>
@@ -27,7 +77,7 @@
         <div id="topic-tree"></div>
         <div id="deck-count" class="deck-count"></div>
       </div>
-      <div class="panel">
+      <div id="panel-settings" class="panel">
         <h2>③ 对局设置</h2>
         <div class="setting-row">
           <label for="hand-size">手牌数量</label>
@@ -156,6 +206,44 @@
           <ul>
             <li>匹配失败的牌仍可打出，但该回合判先手方获胜，出牌前请留意提示。</li>
             <li>开启「匹配提示」会高亮当前手牌中合法的应答牌。</li>
+          </ul>
+        </section>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" type="button" data-close>知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关于弹窗 -->
+  <div id="about-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <div class="modal-head">
+        <h2 id="about-title">关于化学扑克</h2>
+        <button id="btn-about-close" class="modal-close" type="button" data-close aria-label="关闭关于弹窗">✕</button>
+      </div>
+      <div class="modal-body">
+        <section class="rules-block">
+          <h3>产品简介</h3>
+          <ul>
+            <li>以人教版高中化学知识体系为骨架的回合制对战卡牌游戏，用真实化学反应规律对拼，边玩边复习。</li>
+            <li>两种独立模式：化学物质模式（无机 + 有机）、离子模式（离子共存、沉淀/气体/弱电解质、离子氧化还原与组合技）。</li>
+          </ul>
+        </section>
+        <section class="rules-block">
+          <h3>内容规模</h3>
+          <ul>
+            <li>卡牌 113 张：无机 52 张、有机 31 张、离子 30 张。</li>
+            <li>反应方程式 160 条，离子相互作用 44 组，离子组合技 7 个。</li>
+          </ul>
+        </section>
+        <section class="rules-block">
+          <h3>技术与版本</h3>
+          <ul>
+            <li>纯前端实现：原生 ES Module + 无构建工具，本地 Node 静态服务器即可运行。</li>
+            <li>当前版本：<span id="about-version" class="version-badge">v2.4.0</span>　协议：MIT</li>
+            <li>项目仓库：<a href="https://github.com/qetuo1384026/Chemistry-Poker" target="_blank" rel="noopener">github.com/qetuo1384026/Chemistry-Poker</a></li>
           </ul>
         </section>
       </div>
