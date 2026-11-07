@@ -130,7 +130,7 @@ body[data-view="cover"] .app-header { display: none; }
 /* 封面按钮 */
 .cover-actions { width: 100%; margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
 .cover-main-btn { width: 100%; min-height: 50px; font-size: 1.08rem; letter-spacing: .12em; }
-.cover-sub-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cover-sub-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .cover-ghost-btn {
   min-height: 44px; padding: 10px 8px; font-family: inherit; font-size: .9rem;
   background: var(--panel); color: var(--text); border: 1px solid var(--border);
@@ -188,6 +188,66 @@ input[type="range"] {
 body[data-motion="reduced"] .screen-enter,
 body[data-motion="reduced"] .screen-leave,
 body[data-motion="reduced"] .cover-logo { animation: none; }
+
+/* ---- 对局战绩页 ---- */
+.history-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 10px; margin: 14px 0 18px;
+}
+.history-stat {
+  display: flex; flex-direction: column; gap: 4px; text-align: center;
+  padding: 10px 12px; background: var(--panel-2);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.hs-value { color: var(--accent); font-size: 1.15rem; font-weight: bold; }
+.hs-value i { color: var(--muted); font-style: normal; font-size: .72rem; font-weight: normal; margin: 0 2px; }
+.hs-label { color: var(--muted); font-size: .72rem; letter-spacing: .06em; }
+.history-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.history-filters label {
+  display: flex; flex-direction: column; gap: 4px;
+  color: var(--muted); font-size: .78rem;
+}
+.history-filters select {
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+  font-family: inherit; font-size: .86rem;
+}
+.history-filters select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.history-clear { margin-left: auto; }
+.history-meta { color: var(--muted); font-size: .76rem; margin: 12px 0; }
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-item {
+  padding: 12px 14px; background: var(--panel-2);
+  border: 1px solid var(--border); border-left: 3px solid var(--border);
+  border-radius: 10px;
+}
+.history-item[data-result="win"] { border-left-color: var(--ok); }
+.history-item[data-result="lose"] { border-left-color: var(--bad); }
+.history-item[data-result="draw"] { border-left-color: var(--accent-2); }
+.history-item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.history-badge {
+  padding: 1px 8px; border-radius: 999px; font-size: .74rem;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.history-badge.win { color: var(--ok); border-color: rgba(102,187,106,.5); background: rgba(102,187,106,.1); }
+.history-badge.lose { color: var(--bad); border-color: rgba(239,83,80,.5); background: rgba(239,83,80,.1); }
+.history-badge.draw { color: var(--accent-2); border-color: rgba(255,213,79,.5); background: rgba(255,213,79,.08); }
+.history-time { color: var(--muted); font-size: .78rem; }
+.history-mode { margin-left: auto; color: var(--accent); font-size: .76rem; }
+.history-score { font-size: 1rem; margin-bottom: 4px; }
+.history-score b { color: var(--accent-2); font-size: 1.08rem; }
+.history-sub, .history-tags { color: var(--muted); font-size: .78rem; line-height: 1.6; }
+.history-combo { color: var(--accent-2); }
+.history-empty {
+  padding: 28px 12px; text-align: center; color: var(--muted);
+  background: var(--panel-2); border: 1px dashed var(--border); border-radius: 10px;
+  font-size: .86rem;
+}
+.history-more { margin-top: 14px; width: 100%; }
+@media (max-width: 640px) {
+  .history-clear { margin-left: 0; width: 100%; }
+  .history-mode { margin-left: 0; }
+}
 .btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; transform: none; }
 .btn:focus-visible, .btn-ghost:focus-visible, .modal-close:focus-visible, .cover-ghost-btn:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
@@ -197,6 +257,7 @@ body[data-motion="reduced"] .cover-logo { animation: none; }
 @media (max-width: 640px) {
   .screen-cover { min-height: calc(100vh - 24px); }
   .cover-main { padding: 16px 4px; }
+  .cover-sub-actions { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 420px) {
   .cover-sub-actions { grid-template-columns: 1fr; }
