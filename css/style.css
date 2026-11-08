@@ -435,6 +435,74 @@ body[data-motion="reduced"] .cover-logo { animation: none; }
 .lobby-vs { font-size: 1.4rem; font-weight: bold; color: var(--accent-2); }
 .lobby-room-actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
 
+/* ---- 附近玩家 ---- */
+.lobby-nearby-entry {
+  display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border);
+}
+.lobby-nearby-entry .hint { margin: 0; }
+
+.nearby-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.nearby-loc-text { color: var(--accent); font-size: .88rem; }
+
+.nearby-privacy {
+  padding: 4px 14px 14px; margin-bottom: 12px;
+  background: var(--panel-2); border-radius: 10px;
+}
+.nearby-privacy .setting-row { margin: 10px 0 0; flex-wrap: wrap; }
+.nearby-privacy .setting-row label { width: 84px; }
+.nearby-privacy select {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+}
+
+.nearby-status {
+  padding: 8px 12px; margin-bottom: 10px; border-radius: 8px;
+  font-size: .84rem; color: var(--muted);
+  background: var(--panel-2); border-left: 3px solid var(--border);
+}
+.nearby-status[data-kind="ok"] { color: var(--accent); border-left-color: var(--accent); }
+.nearby-status[data-kind="loading"] { color: var(--accent-2); border-left-color: var(--accent-2); }
+.nearby-status[data-kind="error"] { color: var(--bad); border-left-color: var(--bad); }
+
+.nearby-list { display: flex; flex-direction: column; gap: 8px; min-height: 80px; }
+.nearby-list[data-loading="true"] { opacity: .6; }
+.nearby-empty {
+  padding: 24px 12px; text-align: center; color: var(--muted);
+  background: var(--panel-2); border: 1px dashed var(--border); border-radius: 10px;
+  font-size: .86rem;
+}
+.nearby-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; background: var(--panel-2);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.nearby-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.nearby-name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nearby-meta { display: flex; align-items: center; gap: 8px; font-size: .78rem; color: var(--muted); }
+.nearby-distance { color: var(--accent-2); }
+.nearby-badge {
+  padding: 1px 8px; border-radius: 10px; font-size: .72rem;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.nearby-badge[data-status="idle"] { color: #6ee7a8; border-color: rgba(110,231,168,.4); }
+.nearby-badge[data-status="lobby"] { color: var(--accent-2); border-color: rgba(255,213,79,.4); }
+.nearby-badge[data-status="playing"] { color: var(--bad); border-color: rgba(239,109,109,.35); }
+.nearby-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.nearby-actions .btn.is-muted { opacity: .5; cursor: default; }
+
+/* ---- 邀请横幅 ---- */
+.invite-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 12px;
+  background: rgba(79,195,247,.08); border: 1px solid var(--accent); border-radius: 10px;
+}
+.invite-text { font-size: .9rem; }
+.invite-code { color: var(--accent-2); font-family: monospace; font-weight: bold; letter-spacing: 2px; }
+.invite-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
 @media (max-width: 640px) {
   .lobby-split { grid-template-columns: 1fr; }
+  .nearby-item { align-items: flex-start; flex-direction: column; }
+  .nearby-actions { justify-content: flex-start; width: 100%; }
 }
