@@ -10,7 +10,7 @@ import { addHistoryRecord } from './core/history.js';
 import { playSfx } from './core/sfx.js';
 
 const $ = sel => document.querySelector(sel);
-const DEFAULT_VERSION = '2.7.1';
+const DEFAULT_VERSION = '2.8.0';
 const MIN_LOADING_MS = 600;
 
 const screens = {

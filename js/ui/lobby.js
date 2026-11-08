@@ -1,6 +1,7 @@
-// 联机大厅：创建房间 / 加入房间 / 等待对手 / 开始对战
+// 联机大厅：创建房间 / 加入房间 / 附近玩家 / 等待对手 / 开始对战
 import { NetClient, NetDriver } from '../net/client.js';
 import { getSettings } from '../core/settings.js';
+import { createNearby } from './nearby.js';
 
 export function renderLobby(container, { config, onStart, onBack }) {
   const $ = sel => container.querySelector(sel);
@@ -18,6 +19,25 @@ export function renderLobby(container, { config, onStart, onBack }) {
   let gameStarted = false;
   let busy = false;
   let disposed = false;
+  let pendingInvite = null;
+
+  function getName() {
+    return nameInput.value.trim() || getSettings().nickname || '玩家';
+  }
+
+  const nearbyApi = createNearby({
+    container,
+    config,
+    getName,
+    onJoinRoom: (code) => {
+      nearbyApi.close();
+      joinRoomByCode(code, { fromInvite: true });
+    },
+    onBack: () => {
+      nearbyApi.close();
+      showPanel('menu');
+    }
+  });
 
   // 收到 started 时（房主与对手都适用）建立 NetDriver 并切入牌桌。
   // 必须在 state 到达前完成，否则会丢失开局首帧状态。
@@ -64,9 +84,16 @@ export function renderLobby(container, { config, onStart, onBack }) {
       : '等待房主开始…';
   }
 
+  function hideInvite() {
+    pendingInvite = null;
+    const banner = $('#lobby-invite');
+    if (banner) banner.hidden = true;
+  }
+
   // 清空上一位访客留下的房间号、错误与房间信息，避免二次联机时看到旧邀请码
   function resetUI() {
     setError('');
+    hideInvite();
     nameInput.value = getSettings().nickname;
     $('#lobby-code-input').value = '';
     $('#lobby-code-display').textContent = '------';
@@ -103,6 +130,27 @@ export function renderLobby(container, { config, onStart, onBack }) {
       if (disposed) return;
       setError('');
     });
+    // 附近玩家一键邀请：服务端为邀请者自动建房后，直接进入房间等待界面
+    c.on('roomCreated', (msg) => {
+      if (disposed || busy) return;
+      currentCode = msg.code;
+      currentRole = 'host';
+      $('#lobby-code-display').textContent = currentCode;
+      if (!players.length) players = [{ id: 'p1', name: getName(), role: 'host' }];
+      renderPlayers();
+      updateStartButton();
+      nearbyApi.close();
+      setError('');
+      showPanel('room');
+    });
+    // 收到附近玩家的联机邀请
+    c.on('invite', (msg) => {
+      if (disposed || gameStarted) return;
+      pendingInvite = msg;
+      $('#invite-from').textContent = msg.fromName || '附近玩家';
+      $('#invite-code').textContent = msg.code || '------';
+      $('#lobby-invite').hidden = false;
+    });
     c.on('started', (msg) => {
       if (disposed) return;
       if (msg.players) players = msg.players;
@@ -129,6 +177,8 @@ export function renderLobby(container, { config, onStart, onBack }) {
   }
 
   function resetRoomState() {
+    nearbyApi.close();
+    hideInvite();
     if (client) {
       try { client.leaveRoom(); } catch {}
       try { client.close(); } catch {}
@@ -139,6 +189,44 @@ export function renderLobby(container, { config, onStart, onBack }) {
     players = [];
   }
 
+  // ---- 加入房间（按钮与「附近玩家」邀请共用）----
+  async function joinRoomByCode(rawCode, { fromInvite = false } = {}) {
+    if (busy || disposed) return false;
+    setError('');
+    const code = String(rawCode || '').trim();
+    if (!/^\d{6}$/.test(code)) {
+      setError('请输入 6 位房间号');
+      showPanel('menu');
+      return false;
+    }
+    busy = true;
+    showPanel('joining');
+    try {
+      const c = await ensureClient();
+      const name = getName();
+      const res = await c.joinRoom(code, name);
+      currentCode = res.code;
+      currentRole = 'guest';
+      $('#lobby-code-display').textContent = currentCode;
+      if (res.hostName) players = [{ id: 'p1', name: res.hostName, role: 'host' }];
+      renderPlayers();
+      hideInvite();
+      showPanel('room');
+      updateStartButton();
+      return true;
+    } catch (e) {
+      if (!disposed) {
+        setError(e.message || '加入房间失败');
+        showPanel('menu');
+        // 加入失败后清空房间号，避免残留旧邀请码
+        if (!fromInvite) $('#lobby-code-input').value = '';
+      }
+      return false;
+    } finally {
+      busy = false;
+    }
+  }
+
   // ---- 创建房间 ----
   $('#btn-lobby-create').addEventListener('click', async () => {
     if (busy || disposed) return;
@@ -147,7 +235,7 @@ export function renderLobby(container, { config, onStart, onBack }) {
     showPanel('creating');
     try {
       const c = await ensureClient();
-      const name = nameInput.value.trim() || '玩家';
+      const name = getName();
       const res = await c.createRoom(name, config);
       currentCode = res.code;
       currentRole = 'host';
@@ -166,36 +254,47 @@ export function renderLobby(container, { config, onStart, onBack }) {
     }
   }, { signal });
 
-  // ---- 加入房间 ----
-  $('#btn-lobby-join').addEventListener('click', async () => {
+  // ---- 加入房间（按钮）----
+  $('#btn-lobby-join').addEventListener('click', () => {
     if (busy || disposed) return;
-    setError('');
     const code = ($('#lobby-code-input').value || '').trim();
     if (!/^\d{6}$/.test(code)) {
       setError('请输入 6 位房间号');
       return;
     }
+    joinRoomByCode(code);
+  }, { signal });
+
+  // ---- 附近玩家入口 ----
+  $('#btn-lobby-nearby').addEventListener('click', async () => {
+    if (busy || disposed) return;
     busy = true;
-    showPanel('joining');
+    setError('');
     try {
       const c = await ensureClient();
-      const name = nameInput.value.trim() || '玩家';
-      const res = await c.joinRoom(code, name);
-      currentCode = res.code;
-      currentRole = 'guest';
-      $('#lobby-code-display').textContent = currentCode;
-      showPanel('room');
-      updateStartButton();
+      if (disposed) return;
+      showPanel('nearby');
+      nearbyApi.open(c);
     } catch (e) {
-      if (!disposed) {
-        setError(e.message || '加入房间失败');
-        showPanel('menu');
-        // 加入失败后清空房间号，避免残留旧邀请码
-        $('#lobby-code-input').value = '';
-      }
+      if (!disposed) setError(e.message || '连接失败');
     } finally {
       busy = false;
     }
+  }, { signal });
+
+  // ---- 接受 / 拒绝附近玩家邀请 ----
+  $('#btn-invite-accept').addEventListener('click', () => {
+    if (busy || disposed || !pendingInvite) return;
+    const code = pendingInvite.code;
+    hideInvite();
+    nearbyApi.close();
+    joinRoomByCode(code, { fromInvite: true });
+  }, { signal });
+
+  $('#btn-invite-decline').addEventListener('click', () => {
+    if (disposed || !pendingInvite) return;
+    if (client) client.declineInvite(pendingInvite.fromId);
+    hideInvite();
   }, { signal });
 
   // ---- 开始对战（房主）----
@@ -231,6 +330,7 @@ export function renderLobby(container, { config, onStart, onBack }) {
       disposed = true;
       gameStarted = true;
       ac.abort(); // 先解绑监听器，再关闭连接，避免 close 事件写回即将复用的界面
+      nearbyApi.destroy();
       resetRoomState();
     }
   };

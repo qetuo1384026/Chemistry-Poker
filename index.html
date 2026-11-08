@@ -33,7 +33,7 @@
         <p class="cover-subtitle">CHEMISTRY POKER</p>
         <p class="cover-desc">人教版高中化学 · 知识对战卡牌</p>
         <p class="cover-meta">
-          <span id="cover-version" class="version-badge">v2.6.0</span>
+          <span id="cover-version" class="version-badge">v2.8.0</span>
           <span class="cover-dot">·</span>
           <span>化学物质模式 × 离子模式</span>
         </p>
@@ -124,6 +124,18 @@
 
         <div id="lobby-error" class="error" hidden></div>
 
+        <!-- 附近玩家邀请横幅 -->
+        <div id="lobby-invite" class="invite-banner" hidden>
+          <span class="invite-text">
+            <strong id="invite-from">附近玩家</strong> 邀请你对战 · 房间号
+            <span id="invite-code" class="invite-code">------</span>
+          </span>
+          <span class="invite-actions">
+            <button id="btn-invite-accept" class="btn btn-primary btn-sm" type="button">接受并进入房间</button>
+            <button id="btn-invite-decline" class="btn btn-ghost btn-sm" type="button">拒绝</button>
+          </span>
+        </div>
+
         <!-- 菜单：创建 / 加入 -->
         <div id="lobby-menu" class="lobby-panel">
           <div class="lobby-split">
@@ -138,6 +150,43 @@
               <input id="lobby-code-input" class="text-input lobby-code-input" type="text" maxlength="6" placeholder="6 位房间号" inputmode="numeric">
               <button id="btn-lobby-join" class="btn btn-primary" type="button">加入房间</button>
             </div>
+          </div>
+          <div class="lobby-nearby-entry">
+            <button id="btn-lobby-nearby" class="btn btn-ghost" type="button">📍 附近玩家</button>
+            <span class="hint">自动搜索附近在线玩家，一键邀请组队</span>
+          </div>
+        </div>
+
+        <!-- 附近玩家 -->
+        <div id="lobby-nearby" class="lobby-panel" hidden>
+          <div class="nearby-head">
+            <span id="nearby-loc-text" class="nearby-loc-text">正在定位…</span>
+            <button id="btn-nearby-rescan" class="btn btn-ghost btn-sm" type="button">🔄 重新扫描</button>
+          </div>
+
+          <div class="nearby-privacy">
+            <div class="setting-row">
+              <label for="nearby-city">城市兜底</label>
+              <select id="nearby-city"></select>
+              <span class="hint-inline">浏览器定位不可用时使用城市坐标</span>
+            </div>
+            <div class="setting-row">
+              <label for="nearby-share">公开位置</label>
+              <input type="checkbox" id="nearby-share" checked>
+              <span class="hint-inline">关闭后我不会出现在其他玩家的附近列表</span>
+            </div>
+            <div class="setting-row">
+              <label for="nearby-radius">搜索范围</label>
+              <select id="nearby-radius"></select>
+              <span class="hint-inline">同时受对方设置的范围限制</span>
+            </div>
+          </div>
+
+          <div id="nearby-status" class="nearby-status" role="status" aria-live="polite" hidden></div>
+          <div id="nearby-list" class="nearby-list"></div>
+
+          <div class="lobby-room-actions">
+            <button id="btn-nearby-back" class="btn btn-ghost" type="button">← 返回大厅</button>
           </div>
         </div>
 
@@ -437,7 +486,7 @@
           <h3>技术与版本</h3>
           <ul>
             <li>纯前端实现：原生 ES Module + 无构建工具，本地 Node 静态服务器即可运行。</li>
-            <li>当前版本：<span id="about-version" class="version-badge">v2.6.0</span>　协议：MIT</li>
+            <li>当前版本：<span id="about-version" class="version-badge">v2.8.0</span>　协议：MIT</li>
             <li>项目仓库：<a href="https://github.com/qetuo1384026/Chemistry-Poker" target="_blank" rel="noopener">github.com/qetuo1384026/Chemistry-Poker</a></li>
           </ul>
         </section>
