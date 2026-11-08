@@ -1,7 +1,12 @@
 // 联机大厅：创建房间 / 加入房间 / 附近玩家 / 等待对手 / 开始对战
 import { NetClient, NetDriver } from '../net/client.js';
 import { getSettings } from '../core/settings.js';
+import { getNearbyPrefs, locate, NEARBY_PREFS_KEY } from '../core/location.js';
+import { findCity } from '../data/cities.js';
 import { createNearby } from './nearby.js';
+
+// 本次页面会话缓存的定位结果，避免每次进入大厅都重新请求
+let cachedGeo = null;
 
 export function renderLobby(container, { config, onStart, onBack }) {
   const $ = sel => container.querySelector(sel);
@@ -168,12 +173,34 @@ export function renderLobby(container, { config, onStart, onBack }) {
     });
     try {
       await c.connect();
+      // 进入大厅即发布位置档案：让其他玩家的「附近玩家」列表能搜索到自己
+      publishPresence(c).catch(() => {});
       return c;
     } catch (e) {
       if (client === c) client = null;
       setError(e.message || '连接失败');
       throw e;
     }
+  }
+
+  // 发布当前玩家的位置档案。城市兜底优先（HTTP 环境拿不到 GPS），否则尝试 GPS。
+  async function publishPresence(c) {
+    const prefs = getNearbyPrefs();
+    const base = { name: getName(), shareLocation: prefs.shareLocation, radiusKm: prefs.radiusKm };
+    if (!prefs.shareLocation) {
+      c.updateProfile(base);
+      return;
+    }
+    const city = prefs.cityId && findCity(prefs.cityId);
+    if (city) {
+      c.updateProfile({ ...base, lat: city.lat, lng: city.lng, source: 'city' });
+      return;
+    }
+    if (!cachedGeo) {
+      cachedGeo = await locate(8_000);
+      if (!cachedGeo) return; // 定位不可用且未选择城市：等待玩家在附近面板中选择
+    }
+    c.updateProfile({ ...base, lat: cachedGeo.lat, lng: cachedGeo.lng, source: 'gps' });
   }
 
   function resetRoomState() {
@@ -297,6 +324,12 @@ export function renderLobby(container, { config, onStart, onBack }) {
     hideInvite();
   }, { signal });
 
+  // 同一浏览器多个窗口共享 localStorage：任一窗口修改附近偏好后，其余窗口立即重新发布位置
+  window.addEventListener('storage', (e) => {
+    if (disposed || e.key !== NEARBY_PREFS_KEY || !client) return;
+    publishPresence(client).catch(() => {});
+  }, { signal });
+
   // ---- 开始对战（房主）----
   // 不在此处等待 state：切屏与 NetDriver 的建立统一由 started 消息驱动，
   // 避免先消费掉首帧 state 导致牌桌空白。
@@ -323,6 +356,8 @@ export function renderLobby(container, { config, onStart, onBack }) {
 
   // 初始
   resetUI();
+  // 进入大厅即建立连接并发布位置档案，保证停留在大厅菜单中的玩家也能被附近搜索发现
+  ensureClient().catch(() => {});
 
   return {
     destroy() {

@@ -240,6 +240,34 @@ await t('未提供坐标时返回 needLocation', async () => {
   ws.close();
 });
 
+// 7. 仅发布档案即可被发现
+await t('仅发布位置档案（未打开附近面板）也能被搜索到', async () => {
+  const self = await online('自己', ORIGIN.lat, ORIGIN.lng, { radiusKm: 30 });
+  const ws = await connect();
+  const rec = recorder(ws);
+
+  send(ws, {
+    type: 'profile', name: '只听歌玩家', lat: latOffset(1), lng: ORIGIN.lng,
+    source: 'city', radiusKm: 30, shareLocation: true
+  });
+  send(ws, { type: 'ping' });
+  await rec.wait('pong'); // 同连接消息有序，pong 到达即代表档案已生效
+
+  const res = await scan(self, { lat: ORIGIN.lat, lng: ORIGIN.lng, radiusKm: 30, name: '自己' });
+  const found = res.players.find(p => p.name === '只听歌玩家');
+  assert(found, '发布档案后应出现在附近列表');
+  near(found.distanceKm, 1, 0.1, '档案距离');
+
+  // 档案中关闭位置公开 → 立即从列表消失
+  send(ws, { type: 'profile', name: '只听歌玩家', shareLocation: false });
+  send(ws, { type: 'ping' });
+  await rec.wait('pong');
+  const res2 = await scan(self, { lat: ORIGIN.lat, lng: ORIGIN.lng, radiusKm: 30, name: '自己' });
+  assert(!res2.players.some(p => p.name === '只听歌玩家'), '关闭公开后应不可见');
+
+  self.ws.close(); ws.close();
+});
+
 // 8. 一键邀请 + 自动建房
 await t('一键邀请自动建房，对方接受后可开局', async () => {
   const host = await online('邀请者', ORIGIN.lat, ORIGIN.lng, { radiusKm: 30 });
