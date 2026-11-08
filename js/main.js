@@ -10,7 +10,7 @@ import { addHistoryRecord } from './core/history.js';
 import { playSfx } from './core/sfx.js';
 
 const $ = sel => document.querySelector(sel);
-const DEFAULT_VERSION = '2.6.0';
+const DEFAULT_VERSION = '2.7.1';
 const MIN_LOADING_MS = 600;
 
 const screens = {
@@ -222,7 +222,7 @@ function startGame(config) {
   destroyBoard();
   resetEndScreen();
   playSfx('click');
-  gameSession = { config, startedAt: Date.now() };
+  gameSession = { config, startedAt: Date.now(), playerName: getSettings().nickname, opponentName: 'AI' };
   show('board');
   const driver = new LocalDriver(config);
   board = startBoard(screens.board, driver, {
@@ -238,14 +238,21 @@ function startOnlineGame(config) {
   show('lobby');
   lobbyApi = renderLobby(screens.lobby, {
     config,
-    onStart: (driver, opponentName) => {
+    onStart: (driver, opponentName, selfName) => {
       destroyBoard();
       resetEndScreen();
-      gameSession = { config, startedAt: Date.now() };
+      const effective = driver.config || config;
+      gameSession = {
+        config: effective,
+        startedAt: Date.now(),
+        online: true,
+        playerName: selfName || getSettings().nickname,
+        opponentName
+      };
       show('board');
       board = startBoard(screens.board, driver, {
         onEnd: showEnd,
-        config: { ...config, playerName: getSettings().nickname, opponentName }
+        config: { ...effective, playerName: selfName || getSettings().nickname, opponentName }
       });
     },
     onBack: () => switchView('setup', { animate: true })
@@ -283,10 +290,14 @@ function showEnd(game) {
   const result = game.result;
   playSfx(result.winnerId === 'player' ? 'win' : result.winnerId === 'ai' ? 'lose' : 'click');
   addHistoryRecord(buildHistoryRecord(game)); // 结束后自动增量保存到本地
+  // 联机对局使用双方真实昵称；单机保持原有的「你 / AI」文案
+  const { online = false, playerName = '你', opponentName = 'AI' } = gameSession || {};
   $('#end-title').textContent =
-    result.winnerId === 'player' ? '🎉 你赢了！' :
-    result.winnerId === 'ai' ? '🤖 AI 获胜' : '🤝 平局';
-  $('#end-score').textContent = `你 ${result.playerScore} : ${result.aiScore} AI`;
+    result.winnerId === 'player' ? (online ? `🎉 ${playerName} 获胜！` : '🎉 你赢了！') :
+    result.winnerId === 'ai' ? (online ? `${opponentName} 获胜` : '🤖 AI 获胜') : '🤝 平局';
+  $('#end-score').textContent = online
+    ? `${playerName} ${result.playerScore} : ${result.aiScore} ${opponentName}`
+    : `你 ${result.playerScore} : ${result.aiScore} AI`;
 
   // 知识点回顾：汇总本局出现过的有效匹配（去重）
   const list = $('#recap-list');

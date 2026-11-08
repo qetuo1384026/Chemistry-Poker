@@ -309,6 +309,8 @@ export class MultiplayerServer {
     game.players.player.name = room.host.name;
     game.players.ai.name = room.guest.name;
 
+    // 先发 started，双方据此建立 NetDriver 并切入牌桌，随后到达的 state 才不会丢失
+    this._broadcastStarted(room);
     this._broadcastState(room);
     this._broadcastRoomUpdate(room);
   }
@@ -386,6 +388,20 @@ export class MultiplayerServer {
     room.game = game;
     room.endedAt = null;
     this._broadcastState(room);
+  }
+
+  _broadcastStarted(room) {
+    const base = {
+      type: 'started',
+      code: room.code,
+      config: room.config,
+      players: [
+        { id: 'p1', name: room.host.name, role: 'host' },
+        { id: 'p2', name: room.guest.name, role: 'guest' }
+      ]
+    };
+    this._send(room.host, { ...base, myRole: 'host' });
+    this._send(room.guest, { ...base, myRole: 'guest' });
   }
 
   _broadcastState(room) {

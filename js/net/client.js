@@ -103,11 +103,6 @@ export class NetClient {
     return res;
   }
 
-  startGame() {
-    this.send({ type: 'start' });
-    return this._wait(['state', 'error']);
-  }
-
   leaveRoom() {
     this.send({ type: 'leave' });
     this._clearSession();
