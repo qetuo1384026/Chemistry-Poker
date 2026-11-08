@@ -7,11 +7,15 @@
 //   - 断线有宽限期，允许同房间令牌重连；超时则判负。
 import { Game, PHASE } from '../core/game.js';
 import { cardsByTopics } from '../data/index.js';
+import { haversineKm, validCoord } from './geo.js';
 
 const RECONNECT_GRACE_MS = 60_000;   // 断线重连宽限
 const HEARTBEAT_INTERVAL = 25_000;   // 心跳间隔
 const HEARTBEAT_TIMEOUT = 10_000;    // 心跳超时
 const NAME_MAX = 12;
+const NEARBY_LIMIT = 50;             // 附近列表最多返回人数
+const DEFAULT_RADIUS_KM = 30;
+const MAX_RADIUS_KM = 1000;
 
 function genCode(existing) {
   let code;
@@ -84,6 +88,7 @@ export class MultiplayerServer {
   constructor() {
     this.rooms = new Map(); // code -> room
     this.sockets = new WeakSet();
+    this.clients = new Set(); // 当前在线连接（附近玩家检索）
     this._heartbeat = setInterval(() => this._tickHeartbeat(), HEARTBEAT_INTERVAL);
     this._cleanup = setInterval(() => this._tickCleanup(), 5_000);
     if (this._heartbeat.unref) this._heartbeat.unref();
@@ -97,6 +102,17 @@ export class MultiplayerServer {
     ws.roomCode = null;
     ws.name = '玩家';
     ws.token = null;
+    // 连接级唯一标识（与房间内 p1/p2 槽位无关），用于附近玩家邀请
+    ws.pid = 'u' + Math.random().toString(36).slice(2, 10);
+    ws.profile = {
+      name: '玩家',
+      lat: null,
+      lng: null,
+      source: '',
+      shareLocation: true,
+      radiusKm: DEFAULT_RADIUS_KM
+    };
+    this.clients.add(ws);
 
     ws.on('pong', () => { ws.isAlive = true; });
 
@@ -115,7 +131,10 @@ export class MultiplayerServer {
       }
     });
 
-    ws.on('close', () => this._onDisconnect(ws));
+    ws.on('close', () => {
+      this.clients.delete(ws);
+      this._onDisconnect(ws);
+    });
     ws.on('error', () => { /* 忽略，close 会处理 */ });
   }
 
@@ -158,6 +177,9 @@ export class MultiplayerServer {
       case 'playRespond': return this._playRespond(ws, msg);
       case 'forfeit': return this._forfeit(ws);
       case 'rematch': return this._rematch(ws);
+      case 'nearby': return this._nearby(ws, msg);
+      case 'invite': return this._invite(ws, msg);
+      case 'inviteDecline': return this._declineInvite(ws, msg);
       case 'ping': return this._send(ws, { type: 'pong' });
       default: break;
     }
@@ -165,10 +187,14 @@ export class MultiplayerServer {
 
   _create(ws, msg) {
     if (ws.roomCode) return this._send(ws, { type: 'error', message: '你已在房间中' });
-    const config = this._sanitizeConfig(msg.config);
-    const name = safeName(msg.name);
+    this._createRoom(ws, safeName(msg.name), this._sanitizeConfig(msg.config));
+  }
+
+  // 创建房间并通知房主；返回 room。供「创建房间」与「附近玩家一键邀请」复用。
+  _createRoom(ws, name, config) {
     const code = genCode(this.rooms);
     ws.name = name;
+    ws.profile.name = name;
     ws.role = 'host';
     ws.playerId = 'p1';
     ws.roomCode = code;
@@ -189,6 +215,7 @@ export class MultiplayerServer {
     this.rooms.set(code, room);
     this._send(ws, { type: 'roomCreated', code, role: 'host', token: ws.token, config });
     this._broadcastRoomUpdate(room);
+    return room;
   }
 
   _join(ws, msg) {
@@ -210,6 +237,7 @@ export class MultiplayerServer {
 
     const name = safeName(msg.name);
     ws.name = name;
+    ws.profile.name = name;
     ws.role = 'guest';
     ws.playerId = 'p2';
     ws.roomCode = code;
@@ -223,6 +251,7 @@ export class MultiplayerServer {
     const oldWs = room[slot];
     const name = safeName(msg.name) || (oldWs ? oldWs.name : '玩家');
     ws.name = name;
+    ws.profile.name = name;
     ws.role = slot;
     ws.playerId = slot === 'host' ? 'p1' : 'p2';
     ws.roomCode = room.code;
@@ -462,6 +491,140 @@ export class MultiplayerServer {
     const opponent = isHost ? room.guest : room.host;
     if (opponent) {
       this._send(opponent, { type: 'opponentLeft' });
+    }
+  }
+
+  // ---- 附近玩家：位置档案 / 检索 / 邀请 ----
+
+  _sanitizeProfile(ws, msg) {
+    const p = ws.profile;
+    if (msg.name != null) {
+      const n = safeName(msg.name);
+      p.name = n;
+      ws.name = n;
+    }
+    if (msg.shareLocation != null) p.shareLocation = msg.shareLocation !== false;
+    if (msg.radiusKm != null) {
+      const r = Number(msg.radiusKm);
+      if (Number.isFinite(r) && r >= 0) p.radiusKm = Math.min(MAX_RADIUS_KM, r);
+    }
+    if (msg.lat != null || msg.lng != null) {
+      const lat = Number(msg.lat);
+      const lng = Number(msg.lng);
+      if (validCoord(lat, lng)) {
+        p.lat = lat;
+        p.lng = lng;
+        p.source = String(msg.source || 'manual').slice(0, 12);
+      } else {
+        p.lat = null;
+        p.lng = null;
+        p.source = '';
+      }
+    }
+  }
+
+  // 连接所处状态：idle（可邀请）/ lobby（在房间未开局）/ playing（对局中）
+  _statusOf(ws) {
+    if (!ws.roomCode) return 'idle';
+    const room = this.rooms.get(ws.roomCode);
+    if (!room) return 'idle';
+    if (room.started && room.game && !room.game.isOver) return 'playing';
+    return 'lobby';
+  }
+
+  // 可直接加入的房间号（仅房主、未开局、无对手）
+  _joinableCode(ws) {
+    if (!ws.roomCode) return null;
+    const room = this.rooms.get(ws.roomCode);
+    if (!room || room.host !== ws) return null;
+    if (room.started || room.guest) return null;
+    return room.code;
+  }
+
+  _nearby(ws, msg) {
+    const requestId = msg.requestId == null ? null : msg.requestId;
+    this._sanitizeProfile(ws, msg);
+    const self = ws.profile;
+    if (!validCoord(self.lat, self.lng)) {
+      return this._send(ws, { type: 'nearbyList', requestId, needLocation: true, total: 0, players: [] });
+    }
+
+    const myRadius = self.radiusKm > 0 ? self.radiusKm : Infinity;
+    const list = [];
+    for (const other of this.clients) {
+      if (other === ws) continue;
+      if (other.readyState !== other.OPEN) continue;
+      const op = other.profile;
+      if (!op || op.shareLocation === false) continue;
+      if (!validCoord(op.lat, op.lng)) continue;
+      const distanceKm = haversineKm(self, op);
+      if (!Number.isFinite(distanceKm)) continue;
+      if (distanceKm > myRadius) continue;
+      // 双向隐私：对方的可被搜索半径同样生效
+      const otherRadius = op.radiusKm > 0 ? op.radiusKm : Infinity;
+      if (distanceKm > otherRadius) continue;
+      list.push({
+        id: other.pid,
+        name: op.name,
+        distanceKm: Math.round(distanceKm * 100) / 100,
+        status: this._statusOf(other),
+        joinableCode: this._joinableCode(other),
+        source: op.source
+      });
+    }
+    list.sort((a, b) => a.distanceKm - b.distanceKm);
+    this._send(ws, {
+      type: 'nearbyList',
+      requestId,
+      needLocation: false,
+      total: list.length,
+      players: list.slice(0, NEARBY_LIMIT),
+      self: { shareLocation: self.shareLocation, radiusKm: self.radiusKm }
+    });
+  }
+
+  _invite(ws, msg) {
+    const targetId = String(msg.targetId || '');
+    let target = null;
+    for (const c of this.clients) {
+      if (c.pid === targetId) { target = c; break; }
+    }
+    if (!target || target.readyState !== target.OPEN) {
+      return this._send(ws, { type: 'error', message: '对方已离线' });
+    }
+    if (target === ws) return this._send(ws, { type: 'error', message: '不能邀请自己' });
+    if (this._statusOf(target) !== 'idle') {
+      return this._send(ws, { type: 'error', message: '对方正在对局中' });
+    }
+
+    let room;
+    if (ws.roomCode) {
+      room = this.rooms.get(ws.roomCode);
+      if (!room || room.host !== ws) return this._send(ws, { type: 'error', message: '只有房主可以邀请' });
+      if (room.started) return this._send(ws, { type: 'error', message: '对局已开始' });
+      if (room.guest) return this._send(ws, { type: 'error', message: '房间已有对手' });
+    } else {
+      // 一键邀请：为邀请者自动建房，对方接受后按普通 join 入房
+      room = this._createRoom(ws, safeName(msg.name || ws.profile.name), this._sanitizeConfig(msg.config));
+    }
+
+    this._send(target, {
+      type: 'invite',
+      fromId: ws.pid,
+      fromName: room.host.name,
+      code: room.code,
+      config: room.config
+    });
+    this._send(ws, { type: 'inviteSent', targetId: target.pid, targetName: target.profile.name, code: room.code });
+  }
+
+  _declineInvite(ws, msg) {
+    const fromId = String(msg.fromId || '');
+    for (const c of this.clients) {
+      if (c.pid === fromId) {
+        this._send(c, { type: 'inviteDeclined', fromId: ws.pid, fromName: ws.profile.name });
+        return;
+      }
     }
   }
 

@@ -116,6 +116,47 @@ export class NetClient {
     this.send({ type: 'rematch' });
   }
 
+  // ---- 附近玩家 ----
+
+  // 请求附近玩家列表；超时或 error 时 reject，由调用方做重试
+  requestNearby(options = {}, timeoutMs = 8_000) {
+    const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.send({ type: 'nearby', ...options, requestId });
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('附近玩家请求超时'));
+      }, timeoutMs);
+      const onList = (msg) => {
+        if (msg.requestId !== requestId) return;
+        cleanup();
+        resolve(msg);
+      };
+      const onError = (msg) => {
+        cleanup();
+        reject(new Error(msg.message || '附近玩家请求失败'));
+      };
+      const cleanup = () => {
+        clearTimeout(timer);
+        this._handlers.get('nearbyList')?.delete(onList);
+        this._handlers.get('error')?.delete(onError);
+      };
+      if (!this._handlers.has('nearbyList')) this._handlers.set('nearbyList', new Set());
+      this._handlers.get('nearbyList').add(onList);
+      if (!this._handlers.has('error')) this._handlers.set('error', new Set());
+      this._handlers.get('error').add(onError);
+    });
+  }
+
+  // 一键邀请附近玩家（服务端会为邀请者自动建房）
+  invitePlayer(targetId, config = null, name = null) {
+    this.send({ type: 'invite', targetId, config, name });
+  }
+
+  declineInvite(fromId) {
+    this.send({ type: 'inviteDecline', fromId });
+  }
+
   close() {
     try { this.ws?.close(); } catch {}
     this._clearSession();

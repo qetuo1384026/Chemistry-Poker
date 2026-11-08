@@ -1,12 +1,12 @@
 {
   "name": "chemistry-poker",
-  "version": "2.7.1",
+  "version": "2.8.0",
   "description": "基于人教版高中化学知识体系的扑克对战游戏（化学物质模式 + 离子模式）",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "start:ip": "node server.js --port=8080",
-    "test": "node tests/run-tests.mjs && node tests/run-tests-v2.mjs && node tests/net-server.test.mjs"
+    "test": "node tests/run-tests.mjs && node tests/run-tests-v2.mjs && node tests/net-server.test.mjs && node tests/net-nearby.test.mjs"
   },
   "license": "MIT",
   "dependencies": {
