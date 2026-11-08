@@ -1,7 +1,7 @@
 // 附近玩家的位置与隐私偏好：本地持久化 + 浏览器定位（失败时由 UI 引导选择城市）
 import { findCity } from '../data/cities.js';
 
-const STORAGE_KEY = 'cp-nearby-prefs';
+export const NEARBY_PREFS_KEY = 'cp-nearby-prefs';
 
 // 0 表示不限距离
 export const RADIUS_OPTIONS = [
@@ -30,7 +30,7 @@ function normalize(raw) {
 
 export function getNearbyPrefs() {
   try {
-    return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'));
+    return normalize(JSON.parse(localStorage.getItem(NEARBY_PREFS_KEY) || 'null'));
   } catch {
     return { ...DEFAULT_PREFS };
   }
@@ -38,7 +38,7 @@ export function getNearbyPrefs() {
 
 export function saveNearbyPrefs(patch) {
   const next = normalize({ ...getNearbyPrefs(), ...(patch || {}) });
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+  try { localStorage.setItem(NEARBY_PREFS_KEY, JSON.stringify(next)); } catch {}
   return next;
 }
 

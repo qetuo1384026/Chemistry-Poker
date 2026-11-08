@@ -118,6 +118,11 @@ export class NetClient {
 
   // ---- 附近玩家 ----
 
+  // 发布位置档案（进入大厅即调用，让附近玩家能够搜索到自己）
+  updateProfile(profile = {}) {
+    this.send({ type: 'profile', ...profile });
+  }
+
   // 请求附近玩家列表；超时或 error 时 reject，由调用方做重试
   requestNearby(options = {}, timeoutMs = 8_000) {
     const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
