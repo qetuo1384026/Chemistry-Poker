@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+import { WebSocketServer } from 'ws';
+import { MultiplayerServer } from './js/net/server.js';
 
 const root = process.cwd();
 const mime = {
@@ -57,10 +59,26 @@ if (started.length === 0) {
   process.exit(1);
 }
 
+// 联机对战：共享的房间服务（所有监听端口共用同一套房间）
+const mp = new MultiplayerServer();
+for (const server of started) {
+  const wss = new WebSocketServer({ noServer: true });
+  wss.on('connection', (ws, req) => mp.handleConnection(ws, req));
+  server.on('upgrade', (req, socket, head) => {
+    // 只处理根路径的 WS 升级，其余交给未来可能的其他升级处理
+    const { pathname } = new URL(req.url, 'http://localhost');
+    if (pathname === '/' || pathname === '/ws') {
+      wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+    } else {
+      socket.destroy();
+    }
+  });
+}
+
 const lines = started.map(server => {
   const { port } = server.address();
   return port === 80
     ? `  http://${DOMAIN}（自定义域名，需要 hosts 映射到 127.0.0.1）\n  http://localhost（本机直连）`
     : `  http://127.0.0.1:${port}（IP:端口 备用方式）\n  http://${DOMAIN}:${port}（域名 + 端口，无需占用 80 端口）`;
 });
-console.log(`化学扑克已启动:\n${lines.join('\n')}`);
+console.log(`化学扑克已启动:\n${lines.join('\n')}\n联机服务已就绪（WebSocket 路径：/ 或 /ws）`);

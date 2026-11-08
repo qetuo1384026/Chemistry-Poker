@@ -2,7 +2,9 @@
 import { renderSetup } from './ui/setup.js';
 import { renderSettings } from './ui/settings.js';
 import { renderHistory } from './ui/history.js';
+import { renderLobby } from './ui/lobby.js';
 import { startBoard } from './ui/board.js';
+import { LocalDriver } from './ui/driver-local.js';
 import { getSettings, applyMotionPreference } from './core/settings.js';
 import { addHistoryRecord } from './core/history.js';
 import { playSfx } from './core/sfx.js';
@@ -14,6 +16,7 @@ const MIN_LOADING_MS = 600;
 const screens = {
   cover: $('#screen-cover'),
   setup: $('#screen-setup'),
+  lobby: $('#screen-lobby'),
   settings: $('#screen-settings'),
   history: $('#screen-history'),
   board: $('#screen-board'),
@@ -22,6 +25,7 @@ const screens = {
 
 let board = null; // 当前对局控制器（用于销毁旧局的 AI 定时器）
 let gameSession = null; // 当前对局的配置与开始时间（用于生成历史记录）
+let lobbyApi = null; // 联机大厅控制器
 let currentView = null;
 let coverReady = false;
 
@@ -220,7 +224,32 @@ function startGame(config) {
   playSfx('click');
   gameSession = { config, startedAt: Date.now() };
   show('board');
-  board = startBoard(screens.board, { ...config, playerName: getSettings().nickname }, { onEnd: showEnd });
+  const driver = new LocalDriver(config);
+  board = startBoard(screens.board, driver, {
+    onEnd: showEnd,
+    config: { ...config, playerName: getSettings().nickname, opponentName: 'AI' }
+  });
+}
+
+// 联机对战：进入大厅，对局开始后用 NetDriver 驱动牌桌
+function startOnlineGame(config) {
+  if (lobbyApi) { try { lobbyApi.destroy(); } catch {} }
+  playSfx('click');
+  show('lobby');
+  lobbyApi = renderLobby(screens.lobby, {
+    config,
+    onStart: (driver, opponentName) => {
+      destroyBoard();
+      resetEndScreen();
+      gameSession = { config, startedAt: Date.now() };
+      show('board');
+      board = startBoard(screens.board, driver, {
+        onEnd: showEnd,
+        config: { ...config, playerName: getSettings().nickname, opponentName }
+      });
+    },
+    onBack: () => switchView('setup', { animate: true })
+  });
 }
 
 // 把一局对局整理为完整的历史记录（时间 / 结果 / 得分 / 配置 / 使用的卡牌 / 组合技）
@@ -290,7 +319,7 @@ $('#btn-restart').addEventListener('click', () => {
 });
 
 // ---- 初始化 ----
-const setupApi = renderSetup(screens.setup, { onStart: startGame });
+const setupApi = renderSetup(screens.setup, { onStart: startGame, onStartOnline: startOnlineGame });
 const settingsApi = renderSettings(screens.settings, {
   onChange: (s) => {
     applyMotionPreference(s);
