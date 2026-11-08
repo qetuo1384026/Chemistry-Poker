@@ -172,7 +172,38 @@ await t('加入已满房间返回错误', async () => {
   host.close(); g1.close(); g2.close();
 });
 
-// 2. 信息隐藏
+// 2. 开局握手：started 必须先于 state 到达，双方据此建立驱动后再接收状态
+await t('开局双方先收到 started（含 myRole/config/players）再收到 state', async () => {
+  const host = await connect();
+  const guest = await connect();
+  const created = await createRoom(host, '房主A');
+  await joinRoom(guest, created.code, '客人B');
+
+  const seq = new Map([[host, []], [guest, []]]);
+  const record = (ws) => (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'started' || msg.type === 'state') seq.get(ws).push(msg);
+    } catch {}
+  };
+  host.on('message', record(host));
+  guest.on('message', record(guest));
+
+  send(host, { type: 'start' });
+  await Promise.all([waitMsg(host, 'state'), waitMsg(guest, 'state')]);
+
+  for (const [ws, role] of [[host, 'host'], [guest, 'guest']]) {
+    const msgs = seq.get(ws);
+    eq(msgs[0].type, 'started', 'started 应先于 state 到达');
+    eq(msgs[1].type, 'state');
+    eq(msgs[0].myRole, role);
+    eq(msgs[0].config.handSize, 5);
+    eq(msgs[0].players.length, 2);
+  }
+  host.close(); guest.close();
+});
+
+// 3. 信息隐藏
 await t('房主视角不泄露对手手牌', async () => {
   const host = await connect();
   const guest = await connect();
