@@ -1,28 +1,15 @@
-// 对战界面：渲染牌桌、处理交互、驱动回合流程
-import { Game, PHASE } from '../core/game.js';
+// 对战界面：纯渲染层，通过 driver 接口驱动（本地单机 / 联机共用）
+import { PHASE } from '../core/game.js';
 import { matchCards, validResponses } from '../core/rules.js';
 import { ctypeMeta } from '../core/cards.js';
 import { topicName } from '../data/index.js';
 import { playSfx } from '../core/sfx.js';
 
-const AI_THINK_MS = 800;
 const MODULE_LABEL = { inorganic: '无机', organic: '有机', ion: '离子' };
 const MODE_LABEL = { substance: '化学物质模式', ion: '离子模式' };
 
-export function startBoard(root, config, { onEnd }) {
-  const game = new Game(config.cards, {
-    handSize: config.handSize,
-    difficulty: config.difficulty
-  });
-
-  // 对局生命周期控制：结束只回调一次，销毁时清理挂起的 AI 定时器，
-  // 避免旧对局的延迟回调污染新一局的界面状态
-  let aiTimer = null;
-  let finished = false;
-  const clearAiTimer = () => {
-    if (aiTimer !== null) { clearTimeout(aiTimer); aiTimer = null; }
-  };
-
+export function startBoard(root, driver, { onEnd, config }) {
+  // driver 接口：state / playLead / playRespond / onState / onEnd / start / destroy
   const $ = sel => root.querySelector(sel);
   const elScoreP = $('#score-player');
   const elScoreA = $('#score-ai');
@@ -33,15 +20,24 @@ export function startBoard(root, config, { onEnd }) {
   const elRespSlot = $('#resp-card-slot');
   const elHint = $('#turn-hint');
   const elLog = $('#game-log');
+
   const playerName = config.playerName || '玩家';
-  // 对局记录通过 innerHTML 渲染，昵称需转义后再拼接
-  const playerLogName = String(playerName).replace(/[&<>"']/g, ch => (
+  const opponentName = config.opponentName || 'AI';
+  // 昵称用于 innerHTML 拼接，需转义
+  const esc = s => String(s).replace(/[&<>"']/g, ch => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
   ));
-  const elPlayerLabel = $('#screen-board .score-box.player .label');
-  if (elPlayerLabel) elPlayerLabel.textContent = playerName;
+  const playerLogName = esc(playerName);
+  const opponentLogName = esc(opponentName);
 
-  let lastEntry = null; // 最近一回合结果（用于牌桌展示区）
+  const elPlayerLabel = root.querySelector('.score-box.player .label');
+  if (elPlayerLabel) elPlayerLabel.textContent = playerName;
+  const elAiLabel = root.querySelector('.score-box.ai .label');
+  if (elAiLabel) elAiLabel.textContent = opponentName;
+
+  let warnHint = null; // 应答失败的瞬时警告
+
+  function state() { return driver.state; }
 
   function cardEl(card, opts = {}) {
     const el = document.createElement('div');
@@ -73,66 +69,72 @@ export function startBoard(root, config, { onEnd }) {
   }
 
   function renderLog() {
+    const g = state();
     elLog.innerHTML = '';
-    if (game.log.length === 0) {
+    if (g.log.length === 0) {
       elLog.innerHTML = '<div class="log-empty">对局开始，出牌后这里会记录每次交锋的知识点解析。</div>';
       return;
     }
-    for (const e of game.log) {
+    for (const e of g.log) {
       const div = document.createElement('div');
       div.className = 'log-entry';
-      const who = id => (id === 'player' ? playerLogName : 'AI');
-      const responder = e.leader === 'player' ? 'AI' : playerLogName;
-      const leadTxt = `${who(e.leader)}出【${e.leadCard.name}】`;
+      const who = id => (id === 'player' ? playerLogName : opponentLogName);
+      const responder = e.leader === 'player' ? opponentLogName : playerLogName;
       let line;
       if (!e.respCard) {
-        line = `<b>回合${e.round}</b> ${leadTxt}，${responder}放弃应答 → <span class="lr-bad">${who(e.winnerId)}得 ${e.points.total} 分</span>`;
+        line = `<b>回合${e.round}</b> ${who(e.leader)}出【${e.leadCard ? e.leadCard.name : '—'}】，${responder}放弃应答 → <span class="lr-bad">${who(e.winnerId)}得 ${e.points.total} 分</span>`;
       } else {
         const ok = e.success;
-        const comboTxt = ok && e.match.combo ? ` ⚡组合技【${e.match.combo.name}】` : '';
-        line = `<b>回合${e.round}</b> ${leadTxt}，${responder}应答【${e.respCard.name}】 ` +
+        const comboTxt = ok && e.match && e.match.combo ? ` ⚡组合技【${e.match.combo.name}】` : '';
+        line = `<b>回合${e.round}</b> ${who(e.leader)}出【${e.leadCard.name}】，${responder}应答【${e.respCard.name}】 ` +
           (ok
             ? `→ <span class="lr-good">✓ ${e.match.name}${comboTxt}</span> ${who(e.winnerId)}得 ${e.points.total} 分`
             : `→ <span class="lr-bad">✗ 匹配失败</span> ${who(e.winnerId)}得 ${e.points.total} 分`);
       }
-      const expl = e.match.eq
+      const expl = e.match && e.match.eq
         ? `<span class="lr-expl">${e.match.eq}<br>${e.match.expl}</span>`
-        : `<span class="lr-expl">${e.match.expl}</span>`;
+        : `<span class="lr-expl">${e.match ? e.match.expl : ''}</span>`;
       div.innerHTML = line + expl;
       elLog.prepend(div);
     }
   }
 
   function renderScores() {
-    elScoreP.textContent = game.players.player.score;
-    elScoreA.textContent = game.players.ai.score;
+    const g = state();
+    elScoreP.textContent = g.players.player.score;
+    elScoreA.textContent = g.players.ai.score;
     const total = config.handSize;
-    elRound.textContent = game.isOver
+    const leaderName = g.leader === 'player' ? playerName : opponentName;
+    elRound.textContent = g.isOver
       ? '对局结束'
-      : `回合 ${game.round} / ${total}　·　${MODE_LABEL[config.mode] || ''}　·　先手：${game.leader === 'player' ? playerName : 'AI'}`;
+      : `回合 ${g.round} / ${total}　·　${MODE_LABEL[config.mode] || ''}　·　先手：${leaderName}`;
   }
 
   function renderTrick() {
+    const g = state();
     elLeadSlot.innerHTML = '';
     elRespSlot.innerHTML = '';
-    const leadCard = game.currentLead ? game.currentLead.card : (lastEntry && lastEntry.leadCard);
-    const respCard = game.currentLead ? null : (lastEntry && lastEntry.respCard);
+    const lastEntry = g.log[g.log.length - 1] || null;
+    const leadCard = g.currentLead ? g.currentLead.card : (lastEntry && lastEntry.leadCard);
+    const respCard = g.currentLead ? null : (lastEntry && lastEntry.respCard);
     if (leadCard) elLeadSlot.appendChild(cardEl(leadCard));
     if (respCard) elRespSlot.appendChild(cardEl(respCard));
   }
 
   function renderHands() {
+    const g = state();
     elAiHand.innerHTML = '';
-    game.players.ai.hand.forEach(() => elAiHand.appendChild(cardBack()));
+    const aiHandCount = g.players.ai.handCount != null ? g.players.ai.handCount : g.players.ai.hand.length;
+    for (let i = 0; i < aiHandCount; i++) elAiHand.appendChild(cardBack());
 
     elPlayerHand.innerHTML = '';
-    const responding = game.phase === PHASE.RESPOND && game.defender === 'player';
-    const leading = game.phase === PHASE.LEAD && game.leader === 'player';
-    const valids = responding && config.showHints
-      ? new Set(validResponses(game.players.player.hand, game.currentLead.card).map(c => c.id))
+    const responding = g.phase === PHASE.RESPOND && g.defender === 'player';
+    const leading = g.phase === PHASE.LEAD && g.leader === 'player';
+    const valids = responding && config.showHints && g.currentLead
+      ? new Set(validResponses(g.players.player.hand, g.currentLead.card).map(c => c.id))
       : null;
 
-    for (const card of game.players.player.hand) {
+    for (const card of g.players.player.hand) {
       if (leading) {
         elPlayerHand.appendChild(cardEl(card, {
           clickable: true,
@@ -151,7 +153,6 @@ export function startBoard(root, config, { onEnd }) {
       }
     }
 
-    // 应答阶段提供“放弃”按钮
     if (responding) {
       const passBtn = document.createElement('button');
       passBtn.className = 'btn';
@@ -162,103 +163,59 @@ export function startBoard(root, config, { onEnd }) {
     }
   }
 
+  function updateHint() {
+    const g = state();
+    if (g.phase !== PHASE.RESPOND) warnHint = null;
+    if (warnHint) { hint(warnHint, true); return; }
+    if (g.isOver) { hint('对局结束'); return; }
+    const myLead = g.phase === PHASE.LEAD && g.leader === 'player';
+    const myResp = g.phase === PHASE.RESPOND && g.defender === 'player';
+    if (myLead) hint('轮到你先出牌');
+    else if (myResp) hint('轮到你应答：打出一张能与之反应/转化的牌');
+    else if (g.phase === PHASE.LEAD) hint(`${opponentName}先手出牌中…`);
+    else hint(`${opponentName}思考应答中…`);
+  }
+
   function renderAll() {
     renderScores();
     renderTrick();
     renderHands();
     renderLog();
+    updateHint();
   }
 
-  // ---- 流程控制 ----
   function playerLead(cardId) {
-    if (finished || game.phase !== PHASE.LEAD || game.leader !== 'player') return;
-    game.playLead('player', cardId);
+    const g = state();
+    if (g.phase !== PHASE.LEAD || g.leader !== 'player') return;
+    driver.playLead(cardId);
     playSfx('play');
-    lastEntry = null;
-    renderAll();
-    hint('AI 思考应答中…');
-    clearAiTimer();
-    aiTimer = setTimeout(aiRespondTurn, AI_THINK_MS);
-  }
-
-  function aiRespondTurn() {
-    aiTimer = null;
-    if (finished) return;
-    if (game.isOver) return finish();
-    const pick = game.aiRespond(); // 可能为 null（AI 空手牌/放弃）
-    lastEntry = game.playResponse('ai', pick);
-    playSfx('play');
-    renderAll();
-    nextAfterRound();
   }
 
   function playerRespond(cardId) {
-    if (finished || game.phase !== PHASE.RESPOND || game.defender !== 'player') return;
-    const lead = game.currentLead.card;
+    const g = state();
+    if (g.phase !== PHASE.RESPOND || g.defender !== 'player') return;
     if (cardId) {
-      const card = game.players.player.hand.find(c => c.id === cardId);
-      const m = matchCards(lead, card);
-      if (!m.valid) {
-        // 先提示，仍允许打出（判负）
-        hint(`匹配失败：${m.expl}`, true);
+      const card = g.players.player.hand.find(c => c.id === cardId);
+      if (card && g.currentLead) {
+        const m = matchCards(g.currentLead.card, card);
+        if (m && !m.valid) warnHint = `匹配失败：${m.expl}`;
       }
     }
-    lastEntry = game.playResponse('player', cardId);
+    driver.playRespond(cardId);
     playSfx(cardId ? 'play' : 'click');
-    renderAll();
-    nextAfterRound();
   }
 
-  function aiLeadTurn() {
-    if (finished) return;
-    if (game.isOver) return finish();
-    hint('AI 先手出牌中…');
-    clearAiTimer();
-    aiTimer = setTimeout(() => {
-      aiTimer = null;
-      if (finished) return;
-      const card = game.aiLead();
-      if (!card) return finish(); // AI 无牌可出，对局结束
-      game.playLead('ai', card.id);
-      playSfx('play');
-      lastEntry = null;
-      renderAll();
-      hint('轮到你应答：打出一张能与之反应/转化的牌');
-    }, AI_THINK_MS);
-  }
-
-  function nextAfterRound() {
-    if (finished) return;
-    if (game.isOver) return finish();
-    if (game.leader === 'ai') {
-      aiLeadTurn();
-    } else {
-      hint('轮到你先出牌');
-    }
-    renderScores();
-  }
-
-  function finish() {
-    if (finished) return;
-    finished = true;
-    clearAiTimer();
-    renderAll();
+  driver.onState(() => renderAll());
+  driver.onEnd((game) => {
+    playSfx(game.result.winnerId === 'player' ? 'win' : game.result.winnerId === 'ai' ? 'lose' : 'click');
     onEnd(game);
-  }
+  });
 
-  // 初始渲染：初始先手随机，若 AI 先手则由其先出牌
-  renderAll();
-  if (game.leader === 'ai') {
-    aiLeadTurn();
-  } else {
-    hint('对局开始！轮到你先出牌');
-  }
+  driver.start();
 
   return {
-    // 离开对局时调用：停止后续 AI 回合，防止旧对局继续写同一套 DOM
     destroy() {
-      finished = true;
-      clearAiTimer();
+      driver.destroy();
     }
   };
 }
