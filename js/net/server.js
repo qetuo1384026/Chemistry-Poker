@@ -177,6 +177,7 @@ export class MultiplayerServer {
       case 'playRespond': return this._playRespond(ws, msg);
       case 'forfeit': return this._forfeit(ws);
       case 'rematch': return this._rematch(ws);
+      case 'profile': return this._sanitizeProfile(ws, msg);
       case 'nearby': return this._nearby(ws, msg);
       case 'invite': return this._invite(ws, msg);
       case 'inviteDecline': return this._declineInvite(ws, msg);
