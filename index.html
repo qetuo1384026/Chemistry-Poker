@@ -101,7 +101,78 @@
           <span class="hint-inline">高亮可正确应答的手牌（学习模式）</span>
         </div>
         <div id="setup-error" class="error"></div>
-        <button id="btn-start" class="btn btn-primary">开始对战</button>
+        <div class="setup-actions">
+          <button id="btn-start" class="btn btn-primary">开始对战</button>
+          <button id="btn-start-online" class="btn btn-ghost">🌐 联机对战</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 联机大厅 -->
+    <section id="screen-lobby" class="screen" hidden>
+      <div class="setup-bar">
+        <button id="btn-lobby-back" class="btn btn-ghost" type="button">← 返回选择</button>
+      </div>
+      <div class="panel">
+        <h2>联机对战</h2>
+        <p class="hint">与好友实时对战：一方创建房间并把 6 位房间号发给对方，对方加入后即可开始。</p>
+
+        <div class="setting-row">
+          <label for="lobby-name">我的昵称</label>
+          <input id="lobby-name" class="text-input" type="text" maxlength="12" placeholder="玩家">
+        </div>
+
+        <div id="lobby-error" class="error" hidden></div>
+
+        <!-- 菜单：创建 / 加入 -->
+        <div id="lobby-menu" class="lobby-panel">
+          <div class="lobby-split">
+            <div class="lobby-col">
+              <h3>创建房间</h3>
+              <p class="hint">创建一个新房间，把房间号发给好友即可对战。</p>
+              <button id="btn-lobby-create" class="btn btn-primary" type="button">创建房间</button>
+            </div>
+            <div class="lobby-col">
+              <h3>加入房间</h3>
+              <p class="hint">输入好友发来的 6 位房间号加入对战。</p>
+              <input id="lobby-code-input" class="text-input lobby-code-input" type="text" maxlength="6" placeholder="6 位房间号" inputmode="numeric">
+              <button id="btn-lobby-join" class="btn btn-primary" type="button">加入房间</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 创建中 -->
+        <div id="lobby-creating" class="lobby-panel" hidden>
+          <p>正在创建房间…</p>
+        </div>
+
+        <!-- 加入中 -->
+        <div id="lobby-joining" class="lobby-panel" hidden>
+          <p>正在加入房间…</p>
+        </div>
+
+        <!-- 房间内 -->
+        <div id="lobby-room" class="lobby-panel" hidden>
+          <div class="lobby-room-code">
+            <span class="hint">房间号：</span>
+            <span id="lobby-code-display" class="lobby-code-text">------</span>
+          </div>
+          <div class="lobby-players">
+            <div class="lobby-player-slot">
+              <span class="lobby-role">房主</span>
+              <span id="lobby-host">—</span>
+            </div>
+            <div class="lobby-vs">VS</div>
+            <div class="lobby-player-slot">
+              <span class="lobby-role">对手</span>
+              <span id="lobby-guest">—</span>
+            </div>
+          </div>
+          <div class="lobby-room-actions">
+            <button id="btn-lobby-start" class="btn btn-primary" type="button" disabled>等待对手加入…</button>
+            <button id="btn-lobby-leave" class="btn btn-ghost" type="button">离开房间</button>
+          </div>
+        </div>
       </div>
     </section>
 

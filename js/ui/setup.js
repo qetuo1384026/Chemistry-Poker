@@ -20,7 +20,7 @@ export const GAME_MODES = [
   }
 ];
 
-export function renderSetup(container, { onStart }) {
+export function renderSetup(container, { onStart, onStartOnline }) {
   const modeGrid = container.querySelector('#mode-grid');
   const tree = container.querySelector('#topic-tree');
   const scopeHint = container.querySelector('#scope-hint');
@@ -128,23 +128,36 @@ export function renderSetup(container, { onStart }) {
   });
   handSizeSel.addEventListener('change', refreshCount);
 
-  container.querySelector('#btn-start').addEventListener('click', () => {
+  function buildConfig() {
     const topics = selectedTopics();
     const cards = cardsByTopics(topics);
     const handSize = Number(handSizeSel.value);
     if (cards.length < handSize * MIN_DECK_FACTOR) {
       error.textContent = `卡牌不足：当前 ${cards.length} 张，请至少再勾选 ${Math.ceil((handSize * MIN_DECK_FACTOR - cards.length) / 2)} 个专题`;
-      return;
+      return null;
     }
-    onStart({
+    return {
       mode: currentMode.id,
       cards,
       topicIds: topics,
       handSize,
       difficulty: difficultySel.value,
       showHints: hintsCb.checked
-    });
+    };
+  }
+
+  container.querySelector('#btn-start').addEventListener('click', () => {
+    const cfg = buildConfig();
+    if (cfg) onStart(cfg);
   });
+
+  const onlineBtn = container.querySelector('#btn-start-online');
+  if (onlineBtn && onStartOnline) {
+    onlineBtn.addEventListener('click', () => {
+      const cfg = buildConfig();
+      if (cfg) onStartOnline(cfg);
+    });
+  }
 
   renderModes();
   renderTree();

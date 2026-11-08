@@ -411,3 +411,30 @@ body[data-motion="reduced"] .cover-logo { animation: none; }
   background: var(--panel-2); border-radius: 8px; font-size: 0.88rem;
 }
 .recap-list .rc-topic { color: var(--accent); margin-right: 6px; }
+
+/* ---- 设置页操作按钮组 ---- */
+.setup-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* ---- 联机大厅 ---- */
+.lobby-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.lobby-col { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--panel-2); border-radius: 10px; }
+.lobby-col h3 { margin: 0; }
+.lobby-code-input { text-align: center; font-size: 1.3rem; letter-spacing: 4px; font-weight: bold; }
+.lobby-room-code { text-align: center; margin-bottom: 16px; }
+.lobby-code-text {
+  display: inline-block; font-size: 2rem; font-weight: bold; letter-spacing: 8px;
+  color: var(--accent-2); background: var(--panel-2); padding: 8px 24px; border-radius: 10px;
+  font-family: monospace;
+}
+.lobby-players { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 20px 0; }
+.lobby-player-slot {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-width: 120px; padding: 12px; background: var(--panel-2); border-radius: 10px;
+}
+.lobby-role { font-size: 0.8rem; color: var(--muted); }
+.lobby-vs { font-size: 1.4rem; font-weight: bold; color: var(--accent-2); }
+.lobby-room-actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .lobby-split { grid-template-columns: 1fr; }
+}
